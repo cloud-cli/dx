@@ -1,5 +1,5 @@
 import { Documentation, Gateway } from '@cloud-cli/gw';
-import { createServer } from 'http';
+import { createServer, Server } from 'http';
 import { dirname, join } from 'path';
 import { URL } from 'url';
 import { ContainerApi } from './container-api.js';
@@ -22,7 +22,7 @@ export class CommandLineInterface {
     return this.manager.stopContainer(options);
   }
 
-  start(configuration: DockerRunConfiguration): void {
+  start(configuration: DockerRunConfiguration): Server {
     const gw = new Gateway();
     const containers = new ContainerApi(this.manager);
     const logs = new LogsApi(this.manager);
@@ -33,7 +33,7 @@ export class CommandLineInterface {
     gw.add('containers', containers);
     gw.add('logs', logs);
 
-    createServer((request, response) => gw.dispatch(request, response)).listen(port, host);
     console.log(`ContainerRunner available at http://${host}:${port}`);
+    return createServer((request, response) => gw.dispatch(request, response)).listen(port, host);
   }
 }

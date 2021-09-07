@@ -1,4 +1,4 @@
-import { ExecOptions, getExecOutput } from '@actions/exec';
+import { exec, ExecOptions } from '@cloud-cli/exec';
 
 export interface Container {
   name: string;
@@ -100,8 +100,7 @@ export class DockerManager {
   }
 
   private async shellExec(command: string, args?: string[], options?: Partial<ExecOptions>): Promise<string[]> {
-    const output = await getExecOutput(command, args, options);
-
+    const output = await exec(command, args, options);
     if (output.exitCode !== 0) {
       throw new Error(output.stderr + output.stdout);
     }
