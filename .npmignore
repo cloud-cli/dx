@@ -1,7 +1,6 @@
-.nyc_output
-coverage
+coverage/
 dist/*.spec.*
 src/
-jasmine.json
 .github
 tsconfig.json
+jest.*

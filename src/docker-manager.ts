@@ -11,6 +11,7 @@ export interface RunningContainer extends Container {
 export interface RunContainerOptions {
   name: string;
   image: string;
+  version?: string;
   command?: string[];
   volumes?: Record<string, string>;
   ports?: Record<string, string | number>;
@@ -20,8 +21,14 @@ export interface RunContainerOptions {
 
 export class DockerManager {
   async getRunningContainers(): Promise<RunningContainer[]> {
-    const list = await this.shellExec('docker', ['ps', '--format', '{{.Names}}']);
+    const ps = await exec('docker', ['ps', '--format', '{{.Names}}']);
     const containers = [] as RunningContainer[];
+
+    if (!ps.ok) {
+      throw new Error('Failed to list containers: ' + ps.stderr);
+    }
+
+    const list = ps.stdout.trim().split('\n').filter(Boolean);
 
     for (const name of list) {
       containers.push({
@@ -33,14 +40,30 @@ export class DockerManager {
     return containers;
   }
 
-  async getImages(): Promise<string[]> {
+  async getLogs({ name, lines }: Container & { lines?: string }): Promise<string> {
+    if (!name) {
+      throw new Error('Name not specified');
+    }
+
+    const args = ['logs', name];
+
+    if (lines) {
+      args.push('-n', String(Number(lines)));
+    }
+
+    const sh = await exec('docker', args);
+
+    if (sh.ok) {
+      return sh.stdout;
+    }
+
+    return '';
+  }
+
+  /*async getImages(): Promise<string[]> {
     const list = await this.shellExec('docker', ['image', 'ls', '--format', '{{.Repository}}']);
 
     return list.filter((s: string) => s !== '<none>');
-  }
-
-  async getLogs({ name }: Container): Promise<string[]> {
-    return await this.shellExec('docker', ['logs', name]);
   }
 
   async run(options: RunContainerOptions): Promise<RunningContainer> {
@@ -77,10 +100,10 @@ export class DockerManager {
     const list = await this.getRunningContainers();
 
     return list.some((container) => container.name === name);
-  }
+  }*/
 
   private async getContainerPorts(name: string): Promise<Record<string, number>> {
-    const ports = await this.shellExec('docker', [
+    const ports = await exec('docker', [
       'inspect',
       '--format',
       '{{range $p, $conf := .NetworkSettings.Ports}}{{$p}}:{{(index $conf 0).HostPort}} {{end}}',
@@ -89,7 +112,10 @@ export class DockerManager {
 
     const output = {};
 
-    ports.forEach((port) => {
+    // if (!ports.ok) return;
+
+    const list = ports.stdout.trim().split('\n').filter(Boolean);
+    list.forEach((port) => {
       const [hostPortAndProtocol, containerPort] = port.split(':');
       const hostPort = hostPortAndProtocol.split('/')[0];
 
@@ -97,14 +123,5 @@ export class DockerManager {
     });
 
     return output;
-  }
-
-  private async shellExec(command: string, args?: string[], options?: Partial<ExecOptions>): Promise<string[]> {
-    const output = await exec(command, args, options);
-    if (output.exitCode !== 0) {
-      throw new Error(output.stderr + output.stdout);
-    }
-
-    return output.stdout.split('\n').filter(Boolean);
   }
 }
