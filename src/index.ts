@@ -1,14 +1,23 @@
+import { init } from '@cloud-cli/cli';
+import { Resource } from '@cloud-cli/store';
+import { Container } from './store.js';
+import { getRunningContainers, getLogs, run } from './containers.js';
+import { addContainer, removeContainer, listContainers, updateContainer } from './store.js';
+import { pull } from './images.js';
 
-import { Container, DockerManager } from './docker-manager.js';
-
-const manager = new DockerManager();
-
-function list() {
-  return manager.getRunningContainers();
+async function reload() {
+  await Resource.create(Container);
 }
 
-function logs(options: { name: string; lines?: string }) {
-  return manager.getLogs(options);
+export default {
+  pull,
+  add: addContainer,
+  remove: removeContainer,
+  list: listContainers,
+  update: updateContainer,
+  run,
+  ps: getRunningContainers,
+  logs: getLogs,
+  reload,
+  [init]: reload
 }
-
-export default { list, logs }

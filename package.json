@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@cloud-cli/cli": "^1.4.4",
-    "@cloud-cli/exec": "^1.0.4"
+    "@cloud-cli/exec": "^1.0.4",
+    "@cloud-cli/store": "^1.5.1"
   }
 }
