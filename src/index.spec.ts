@@ -7,7 +7,6 @@ import { Resource, SQLiteDriver } from '@cloud-cli/store';
 import { Container } from './store';
 import { init } from '@cloud-cli/cli';
 
-
 beforeEach(() => {
   Resource.use(new SQLiteDriver(':memory:'));
   execMocks.exec.mockReset();
@@ -122,7 +121,7 @@ describe('running containers', () => {
   describe('run', () => {
     it('should throw an error if name was not given', async () => {
       await expect(dx.run({ name: '' })).rejects.toThrowError(new Error('Name is required'));
-    })
+    });
 
     it('should run a container created previously', async () => {
       const container = await dx.add({
@@ -137,25 +136,31 @@ describe('running containers', () => {
 
       await expect(dx.run({ name: 'run-test', env: ['FOO=1', 'BAR=2'] })).resolves.toEqual(true);
 
-      expect(exec.exec).toHaveBeenCalledWith(
-        'docker',
-        [
-          'run',
-          '--rm',
-          '--detach',
-          '--name',
-          'run-test',
-          '-vlocal:/tmp',
-          '-vdisk:/opt',
-          '-p80:80',
-          '-p8080:8000',
-          '-e',
-          'FOO=1',
-          '-e',
-          'BAR=2',
-          'test-image:latest',
-        ],
-      );
+      expect(exec.exec).toHaveBeenCalledWith('docker', [
+        'run',
+        '--rm',
+        '--detach',
+        '--name',
+        'run-test',
+        '-vlocal:/tmp',
+        '-vdisk:/opt',
+        '-p80:80',
+        '-p8080:8000',
+        '-e',
+        'FOO=1',
+        '-e',
+        'BAR=2',
+        'test-image:latest',
+      ]);
+    });
+  });
+
+  describe('stop', () => {
+    it('should stop a running container', async () => {
+      const name = 'test';
+      await expect(dx.stop({ name })).resolves.toBe(true);
+
+      expect(exec.exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', name]);
     });
   });
 });
@@ -166,5 +171,5 @@ describe('initialisation', () => {
     dx[init]();
 
     expect(spy).toHaveBeenCalledWith(Container);
-  })
-})
+  });
+});

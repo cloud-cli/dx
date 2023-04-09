@@ -42,8 +42,8 @@ interface RunOptions {
 
 const defaultRunOptions = { env: [] };
 
-export async function run(options: RunOptions) {
-  options = {...defaultRunOptions, ...options};
+export async function runContainer(options: RunOptions) {
+  options = { ...defaultRunOptions, ...options };
   const { name } = options;
 
   if (!name) {
@@ -68,43 +68,11 @@ export async function run(options: RunOptions) {
   return true;
 }
 
-/*
-async stopContainer({ name }: Container): Promise<void> {
-  return void (await this.shellExec('docker', ['stop', '-t', '5', name]));
-}
+export interface StopOptions { name: string; }
+export async function stopContainer(options: StopOptions) {
+  await exec('docker', ['stop', '-t', '5', options.name]);
 
-async isRunning({ name }: Container): Promise<boolean> {
-  const list = await this.getRunningContainers();
-
-  return list.some((container) => container.name === name);
-}
-
-private async getContainerPorts(name: string): Promise<Record<string, number>> {
-  const ports = await exec('docker', [
-    'inspect',
-    '--format',
-    '{{range $p, $conf := .NetworkSettings.Ports}}{{$p}}:{{(index $conf 0).HostPort}} {{end}}',
-    name,
-  ]);
-
-  const output = {};
-
-  const list = ports.stdout.trim().split('\n').filter(Boolean);
-  list.forEach((port) => {
-    const [hostPortAndProtocol, containerPort] = port.split(':');
-    const hostPort = hostPortAndProtocol.split('/')[0];
-
-    output[Number(hostPort)] = Number(containerPort);
-  });
-
-  return output;
-}*/
-export interface ContainerDetails {
-  name: string;
-  image: string;
-  version?: string;
-  volumes?: string[];
-  ports?: string[];
+  return true;
 }
 
 function getListFromString(string: string): string[] {
