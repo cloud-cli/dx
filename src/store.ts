@@ -21,6 +21,10 @@ interface AddContainerOptions extends ContainerName {
 
 export async function addContainer(options: AddContainerOptions): Promise<Container> {
   const { name, image } = options;
+
+  if (!name) throw new Error('Name required');
+  if (!image) throw new Error('Image required');
+
   const volumes = (options.volumes ? sanitiseVolumes(options.volumes) : '');
   const ports = (options.ports ? sanitisePorts(options.ports) : '');
   const container = new Container({ name, image, volumes, ports });
@@ -45,12 +49,17 @@ export async function removeContainer(options: ContainerName) {
 interface UpdateOptions extends ContainerName {
   ports?: string;
   volumes?: string;
+  image?: string;
 }
 const optionSplitter = /,\s*/;
 
 export async function updateContainer(options: UpdateOptions) {
-  let { ports, volumes, name } = options;
+  let { ports, volumes, name, image } = options;
   const container = await findContainer(name);
+
+  if (!container) {
+    throw new Error('Container not found');
+  }
 
   if (ports) {
     container.ports = sanitisePorts(ports)
@@ -58,6 +67,10 @@ export async function updateContainer(options: UpdateOptions) {
 
   if (volumes) {
     container.volumes = sanitiseVolumes(volumes);
+  }
+
+  if (image) {
+    container.image = image;
   }
 
   await container.save();

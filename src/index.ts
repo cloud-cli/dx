@@ -1,7 +1,7 @@
 import { init } from '@cloud-cli/cli';
 import { Resource } from '@cloud-cli/store';
 import { Container } from './store.js';
-import { getRunningContainers, getLogs, runContainer, stopContainer } from './containers.js';
+import { getRunningContainers, getLogs, startContainer, stopContainer } from './containers.js';
 import { addContainer, removeContainer, listContainers, updateContainer } from './store.js';
 import { pull } from './images.js';
 
@@ -15,7 +15,7 @@ export default {
   remove: removeContainer,
   list: listContainers,
   update: updateContainer,
-  run: runContainer,
+  start: startContainer,
   stop: stopContainer,
   ps: getRunningContainers,
   logs: getLogs,

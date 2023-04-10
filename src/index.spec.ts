@@ -36,6 +36,8 @@ describe('store', () => {
       volumes: '',
       ports: '',
     };
+    await expect(dx.add({ name: '', image: '' })).rejects.toThrowError('Name required');
+    await expect(dx.add({ name: 'test', image: '' })).rejects.toThrowError('Image required');
     await expect(dx.add({ name: 'test', image: 'test:latest' })).resolves.toEqual(expected);
     await expect(dx.list()).resolves.toEqual([expected]);
 
@@ -45,17 +47,19 @@ describe('store', () => {
     await expect(dx.remove({ name: 'test' })).rejects.toThrowError('Container not found: test');
   });
 
-  it('should allow updates to ports and volumes', async () => {
+  it('should allow updates to container properties', async () => {
     await expect(dx.add({ name: 'test', image: 'test:latest' })).resolves.toBeTruthy();
-    await expect(
-      dx.update({ name: 'test', ports: '80:80, 8080:8000, invalid:123', volumes: 'local:/tmp, disk:/opt, invalid:' }),
-    ).resolves.toEqual({
+    await expect(dx.update({ name: 'invalid' })).rejects.toThrowError('Container not found');
+    const properties = { name: 'test', ports: '80:80, 8080:8000, invalid:123', volumes: 'local:/tmp, disk:/opt, invalid:', image: 'other:latest' };
+    const expected = {
       id: 1,
       name: 'test',
-      image: 'test:latest',
+      image: 'other:latest',
       volumes: 'local:/tmp,disk:/opt',
       ports: '80:80,8080:8000',
-    });
+    };
+
+    await expect(dx.update(properties)).resolves.toEqual(expected);
   });
 });
 
@@ -118,9 +122,9 @@ describe('running containers', () => {
     });
   });
 
-  describe('run', () => {
+  describe('start', () => {
     it('should throw an error if name was not given', async () => {
-      await expect(dx.run({ name: '' })).rejects.toThrowError(new Error('Name is required'));
+      await expect(dx.start({ name: '' })).rejects.toThrowError(new Error('Name is required'));
     });
 
     it('should run a container created previously', async () => {
@@ -134,7 +138,7 @@ describe('running containers', () => {
       expect(container.ports).toEqual('80:80,8080:8000');
       expect(container.volumes).toEqual('local:/tmp,disk:/opt');
 
-      await expect(dx.run({ name: 'run-test', env: ['FOO=1', 'BAR=2'] })).resolves.toEqual(true);
+      await expect(dx.start({ name: 'run-test', env: ['FOO=1', 'BAR=2'], ports: '80:1234' })).resolves.toEqual(true);
 
       expect(exec.exec).toHaveBeenCalledWith('docker', [
         'run',
@@ -146,6 +150,7 @@ describe('running containers', () => {
         '-vdisk:/opt',
         '-p80:80',
         '-p8080:8000',
+        '-p80:1234',
         '-e',
         'FOO=1',
         '-e',
@@ -161,6 +166,7 @@ describe('running containers', () => {
       await expect(dx.stop({ name })).resolves.toBe(true);
 
       expect(exec.exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', name]);
+      expect(exec.exec).toHaveBeenCalledWith('docker', ['rm', name]);
     });
   });
 });

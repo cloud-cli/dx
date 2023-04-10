@@ -38,11 +38,12 @@ export async function getLogs({ name, lines }: GetLogsOptions): Promise<string> 
 interface RunOptions {
   name: string;
   env?: string[];
+  ports?: string;
 }
 
-const defaultRunOptions = { env: [] };
+const defaultRunOptions = { ports: '', env: [] };
 
-export async function runContainer(options: RunOptions) {
+export async function startContainer(options: RunOptions) {
   options = { ...defaultRunOptions, ...options };
   const { name } = options;
 
@@ -50,20 +51,17 @@ export async function runContainer(options: RunOptions) {
     throw new Error('Name is required');
   }
 
+  const env = [];
+  if (Array.isArray(options.env)) {
+    env.push(...options.env.flatMap((e) => ['-e', e]));
+  }
+
   const container = await findContainer(name);
-  const env = options.env.flatMap((e) => ['-e', e]);
+  const volumes = addExecFlag(container.volumes, 'v')
+  const ports = addExecFlag(container.ports, 'p');
+  const extraPorts = addExecFlag(options.ports, 'p');
 
-  const volumes = container.volumes
-    .split(',')
-    .filter(Boolean)
-    .map((v) => `-v${v}`);
-
-  const ports = container.ports
-    .split(',')
-    .filter(Boolean)
-    .map((p) => `-p${p}`);
-
-  await exec('docker', ['run', '--rm', '--detach', '--name', name, ...volumes, ...ports, ...env, container.image]);
+  await exec('docker', ['run', '--rm', '--detach', '--name', name, ...volumes, ...ports, ...extraPorts, ...env, container.image]);
 
   return true;
 }
@@ -71,10 +69,17 @@ export async function runContainer(options: RunOptions) {
 export interface StopOptions { name: string; }
 export async function stopContainer(options: StopOptions) {
   await exec('docker', ['stop', '-t', '5', options.name]);
+  await exec('docker', ['rm', options.name]);
 
   return true;
 }
 
 function getListFromString(string: string): string[] {
   return string.trim().split('\n').filter(Boolean);
+}
+
+function addExecFlag(string: string, flag: string) {
+  return string.split(',')
+    .filter(Boolean)
+    .map((p) => `-${flag}${p}`);
 }
