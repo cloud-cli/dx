@@ -168,6 +168,13 @@ describe('running containers', () => {
       expect(exec.exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', name]);
       expect(exec.exec).toHaveBeenCalledWith('docker', ['rm', name]);
     });
+
+    it('should throw an error if name is empty', async () => {
+      const name = '';
+      await expect(dx.stop({ name })).rejects.toThrowError('Name is required');
+
+      expect(exec.exec).not.toHaveBeenCalled();
+    });
   });
 });
 

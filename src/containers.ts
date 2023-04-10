@@ -68,6 +68,10 @@ export async function startContainer(options: RunOptions) {
 
 export interface StopOptions { name: string; }
 export async function stopContainer(options: StopOptions) {
+  if (!options.name) {
+    throw new Error('Name is required');
+  }
+
   await exec('docker', ['stop', '-t', '5', options.name]);
   await exec('docker', ['rm', options.name]);
 
