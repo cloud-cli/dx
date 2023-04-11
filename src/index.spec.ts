@@ -142,7 +142,6 @@ describe('running containers', () => {
 
       expect(exec.exec).toHaveBeenCalledWith('docker', [
         'run',
-        '--rm',
         '--detach',
         '--restart',
         'always',

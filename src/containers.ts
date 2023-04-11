@@ -63,7 +63,6 @@ export async function startContainer(options: RunOptions) {
 
   await exec('docker', [
     'run',
-    '--rm',
     '--detach',
     '--restart',
     'always',
