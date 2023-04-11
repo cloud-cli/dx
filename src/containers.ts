@@ -37,7 +37,7 @@ export async function getLogs({ name, lines }: GetLogsOptions): Promise<string> 
 
 interface RunOptions {
   name: string;
-  env?: string[];
+  env?: string[] | string;
   ports?: string;
 }
 
@@ -52,6 +52,10 @@ export async function startContainer(options: RunOptions) {
   }
 
   const env = [];
+  if (typeof options.env === 'string') {
+    options.env = [options.env];
+  }
+
   if (Array.isArray(options.env)) {
     env.push(...options.env.flatMap((e) => ['-e', e]));
   }

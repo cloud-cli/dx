@@ -138,7 +138,7 @@ describe('running containers', () => {
       expect(container.ports).toEqual('80:80,8080:8000');
       expect(container.volumes).toEqual('local:/tmp,disk:/opt');
 
-      await expect(dx.start({ name: 'run-test', env: ['FOO=1', 'BAR=2'], ports: '80:1234' })).resolves.toEqual(true);
+      await expect(dx.start({ name: 'run-test', env: 'FOO=1', ports: '80:1234' })).resolves.toEqual(true);
 
       expect(exec.exec).toHaveBeenCalledWith('docker', [
         'run',
@@ -154,8 +154,6 @@ describe('running containers', () => {
         '-p80:1234',
         '-e',
         'FOO=1',
-        '-e',
-        'BAR=2',
         'test-image:latest',
       ]);
     });
