@@ -57,16 +57,31 @@ export async function startContainer(options: RunOptions) {
   }
 
   const container = await findContainer(name);
-  const volumes = addExecFlag(container.volumes, 'v')
+  const volumes = addExecFlag(container.volumes, 'v');
   const ports = addExecFlag(container.ports, 'p');
   const extraPorts = addExecFlag(options.ports, 'p');
 
-  await exec('docker', ['run', '--rm', '--detach', '--name', name, ...volumes, ...ports, ...extraPorts, ...env, container.image]);
+  await exec('docker', [
+    'run',
+    '--rm',
+    '--detach',
+    '--restart',
+    'always',
+    '--name',
+    name,
+    ...volumes,
+    ...ports,
+    ...extraPorts,
+    ...env,
+    container.image,
+  ]);
 
   return true;
 }
 
-export interface StopOptions { name: string; }
+export interface StopOptions {
+  name: string;
+}
 export async function stopContainer(options: StopOptions) {
   if (!options.name) {
     throw new Error('Name is required');
@@ -83,7 +98,8 @@ function getListFromString(string: string): string[] {
 }
 
 function addExecFlag(string: string, flag: string) {
-  return string.split(',')
+  return string
+    .split(',')
     .filter(Boolean)
     .map((p) => `-${flag}${p}`);
 }

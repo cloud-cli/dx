@@ -144,6 +144,8 @@ describe('running containers', () => {
         'run',
         '--rm',
         '--detach',
+        '--restart',
+        'always',
         '--name',
         'run-test',
         '-vlocal:/tmp',
