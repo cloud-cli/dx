@@ -46,6 +46,10 @@ export async function removeContainer(options: ContainerName) {
   throw new Error('Container not found: ' + options.name);
 }
 
+export async function getContainer(options: ContainerName) {
+  return await findContainer(options.name);
+}
+
 interface UpdateOptions extends ContainerName {
   ports?: string;
   volumes?: string;

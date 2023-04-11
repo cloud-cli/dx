@@ -40,6 +40,7 @@ describe('store', () => {
     await expect(dx.add({ name: 'test', image: '' })).rejects.toThrowError('Image required');
     await expect(dx.add({ name: 'test', image: 'test:latest' })).resolves.toEqual(expected);
     await expect(dx.list()).resolves.toEqual([expected]);
+    await expect(dx.get({ name: 'test' })).resolves.toEqual(expected);
 
     await expect(dx.remove({ name: 'test' })).resolves.toBe(true);
     await expect(dx.list()).resolves.toEqual([]);
