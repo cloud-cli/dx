@@ -101,10 +101,10 @@ async function getEnvVars(inputEnv: string | string[], vars: EnvList) {
   const port = await getPort();
   const envVars: EnvList = vars.concat({ key: 'PORT', value: String(port) });
 
-  const additionalEnv = typeof inputEnv === 'string' ? [inputEnv] : inputEnv;
+  const additionalEnv = [inputEnv].flat();
   if (Array.isArray(additionalEnv)) {
     additionalEnv.forEach((str) => {
-      const [key, value = ''] = str.split('=');
+      let [key, value] = str.split('=');
       envVars.push({ key, value });
     });
   }
