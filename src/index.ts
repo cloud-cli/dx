@@ -3,7 +3,7 @@ import { Resource, SQLiteDriver } from '@cloud-cli/store';
 import { Container } from './store.js';
 import { getRunningContainers, getLogs, startContainer, stopContainer } from './containers.js';
 import { addContainer, removeContainer, listContainers, updateContainer, getContainer } from './store.js';
-import { pull } from './images.js';
+import { pull, prune } from './images.js';
 
 async function reload() {
   Resource.use(new SQLiteDriver());
@@ -12,6 +12,7 @@ async function reload() {
 
 export default {
   pull,
+  prune,
   add: addContainer,
   remove: removeContainer,
   get: getContainer,

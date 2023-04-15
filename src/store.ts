@@ -5,6 +5,7 @@ export class Container extends Resource {
   @Primary() @NotNull() @Property(Number) id: number;
   @NotNull() @Property(String) name: string;
   @NotNull() @Property(String) image: string;
+  @NotNull() @Property(String) host: string;
   @NotNull() @Property(String) ports: string;
   @NotNull() @Property(String) volumes: string;
 }
@@ -15,6 +16,7 @@ interface ContainerName {
 
 interface AddContainerOptions extends ContainerName {
   image: string;
+  host?: string;
   volumes?: string;
   ports?: string;
 }
@@ -27,7 +29,8 @@ export async function addContainer(options: AddContainerOptions): Promise<Contai
 
   const volumes = (options.volumes ? sanitiseVolumes(options.volumes) : '');
   const ports = (options.ports ? sanitisePorts(options.ports) : '');
-  const container = new Container({ name, image, volumes, ports });
+  const host = options.host;
+  const container = new Container({ name, image, volumes, ports, host });
   const id = await container.save();
 
   container.id = id;
@@ -54,11 +57,12 @@ interface UpdateOptions extends ContainerName {
   ports?: string;
   volumes?: string;
   image?: string;
+  host?: string;
 }
 const optionSplitter = /,\s*/;
 
 export async function updateContainer(options: UpdateOptions) {
-  let { ports, volumes, name, image } = options;
+  let { ports, volumes, name, image, host } = options;
   const container = await findContainer(name);
 
   if (!container) {
@@ -75,6 +79,10 @@ export async function updateContainer(options: UpdateOptions) {
 
   if (image) {
     container.image = image;
+  }
+
+  if (host) {
+    container.host = host;
   }
 
   await container.save();

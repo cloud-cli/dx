@@ -1,5 +1,8 @@
 const execMocks = { exec: jest.fn() };
+const getPortMocks = jest.fn();
+
 jest.mock('@cloud-cli/exec', () => execMocks);
+jest.mock('get-port', () => getPortMocks);
 
 import * as exec from '@cloud-cli/exec';
 import dx from './index';
@@ -11,19 +14,27 @@ beforeEach(() => {
   Resource.use(new SQLiteDriver(':memory:'));
   execMocks.exec.mockReset();
   Resource.create(Container);
+
+  getPortMocks.mockReturnValue(1234);
 });
 
 describe('docker images', () => {
   it('should pull an image', async () => {
-    execMocks.exec.mockResolvedValueOnce({
-      ok: true,
-      stdout: '',
-    });
+    execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: '' });
 
     const output = dx.pull({ image: 'test' });
 
     await expect(output).resolves.toEqual(true);
     expect(execMocks.exec).toHaveBeenCalledWith('docker', ['pull', 'test']);
+  });
+
+  it('should prune old images', async () => {
+    execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: '' });
+
+    const output = dx.prune();
+
+    await expect(output).resolves.toEqual(true);
+    expect(execMocks.exec).toHaveBeenCalledWith('docker', ['image', 'prune', '-f']);
   });
 });
 
@@ -32,13 +43,14 @@ describe('store', () => {
     const expected = {
       id: 1,
       name: 'test',
+      host: 'test.com',
       image: 'test:latest',
       volumes: '',
       ports: '',
     };
     await expect(dx.add({ name: '', image: '' })).rejects.toThrowError('Name required');
     await expect(dx.add({ name: 'test', image: '' })).rejects.toThrowError('Image required');
-    await expect(dx.add({ name: 'test', image: 'test:latest' })).resolves.toEqual(expected);
+    await expect(dx.add({ name: 'test', image: 'test:latest', host: 'test.com' })).resolves.toEqual(expected);
     await expect(dx.list()).resolves.toEqual([expected]);
     await expect(dx.get({ name: 'test' })).resolves.toEqual(expected);
 
@@ -49,15 +61,23 @@ describe('store', () => {
   });
 
   it('should allow updates to container properties', async () => {
-    await expect(dx.add({ name: 'test', image: 'test:latest' })).resolves.toBeTruthy();
+    await expect(dx.add({ name: 'test', image: 'test:latest', host: 'old.com' })).resolves.toBeTruthy();
     await expect(dx.update({ name: 'invalid' })).rejects.toThrowError('Container not found');
-    const properties = { name: 'test', ports: '80:80, 8080:8000, invalid:123', volumes: 'local:/tmp, disk:/opt, invalid:', image: 'other:latest' };
+    const properties = {
+      host: 'new.com',
+      name: 'test',
+      ports: '80:80, 8080:8000, invalid:123',
+      volumes: 'local:/tmp, disk:/opt, invalid:',
+      image: 'other:latest',
+    };
+
     const expected = {
       id: 1,
       name: 'test',
       image: 'other:latest',
       volumes: 'local:/tmp,disk:/opt',
       ports: '80:80,8080:8000',
+      host: 'new.com',
     };
 
     await expect(dx.update(properties)).resolves.toEqual(expected);
@@ -125,13 +145,15 @@ describe('running containers', () => {
 
   describe('start', () => {
     it('should throw an error if name was not given', async () => {
-      await expect(dx.start({ name: '' })).rejects.toThrowError(new Error('Name is required'));
+      const run = jest.fn(() => []);
+      await expect(dx.start({ name: '' }, { run })).rejects.toThrowError(new Error('Name is required'));
     });
 
     it('should run a container created previously', async () => {
       const container = await dx.add({
         name: 'run-test',
         image: 'test-image:latest',
+        host: 'run-test.com',
         ports: '80:80, 8080:8000, invalid:123',
         volumes: 'local:/tmp, disk:/opt, invalid:',
       });
@@ -139,24 +161,52 @@ describe('running containers', () => {
       expect(container.ports).toEqual('80:80,8080:8000');
       expect(container.volumes).toEqual('local:/tmp,disk:/opt');
 
-      await expect(dx.start({ name: 'run-test', env: 'FOO=1', ports: '80:1234' })).resolves.toEqual(true);
-
-      expect(exec.exec).toHaveBeenCalledWith('docker', [
-        'run',
-        '--detach',
-        '--restart',
-        'always',
-        '--name',
-        'run-test',
-        '-vlocal:/tmp',
-        '-vdisk:/opt',
-        '-p80:80',
-        '-p8080:8000',
-        '-p80:1234',
-        '-e',
-        'FOO=1',
-        'test-image:latest',
+      const run = jest.fn(() => [
+        { key: 'FOO', value: 'one' },
+        { key: 'BAR', value: 'two' },
       ]);
+
+      await expect(
+        dx.start(
+          {
+            name: 'run-test',
+            env: 'FOO=1',
+            ports: '80:90',
+          },
+          { run },
+        ),
+      ).resolves.toEqual(true);
+
+      expect(run).toHaveBeenCalledWith('env.show', { app: 'run-test' });
+      expect(run).toHaveBeenCalledWith('px.remove', { domain: 'run-test.com' });
+      expect(run).toHaveBeenCalledWith('px.add', {
+        domain: 'run-test.com',
+        target: 'http://localhost:1234',
+        cors: true,
+        redirect: true,
+      });
+
+      expect(exec.exec).toHaveBeenCalledWith(
+        'docker',
+        [
+          'run',
+          '--detach',
+          '--restart',
+          'always',
+          '--name',
+          'run-test',
+          '-vlocal:/tmp',
+          '-vdisk:/opt',
+          '-p80:90',
+          '-p1234:1234',
+          '-p8080:8000',
+          '-eFOO',
+          '-eBAR',
+          '-ePORT',
+          'test-image:latest',
+        ],
+        { env: { PORT: '1234', FOO: '1', BAR: 'two' } },
+      );
     });
   });
 

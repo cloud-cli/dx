@@ -1,5 +1,6 @@
 import { exec } from '@cloud-cli/exec';
 import { findContainer } from './store.js';
+import getPort from 'get-port';
 
 export async function getRunningContainers(): Promise<string[]> {
   const ps = await exec('docker', ['ps', '--format', '{{.Names}}']);
@@ -10,6 +11,8 @@ export async function getRunningContainers(): Promise<string[]> {
 
   return getListFromString(ps.stdout);
 }
+
+type EnvList = Array<{ key: string; value: string }>;
 
 interface GetLogsOptions {
   name: string;
@@ -43,7 +46,7 @@ interface RunOptions {
 
 const defaultRunOptions = { ports: '', env: [] };
 
-export async function startContainer(options: RunOptions) {
+export async function startContainer(options: RunOptions, { run }: any) {
   options = { ...defaultRunOptions, ...options };
   const { name } = options;
 
@@ -51,35 +54,69 @@ export async function startContainer(options: RunOptions) {
     throw new Error('Name is required');
   }
 
-  const env = [];
-  if (typeof options.env === 'string') {
-    options.env = [options.env];
-  }
-
-  if (Array.isArray(options.env)) {
-    env.push(...options.env.flatMap((e) => ['-e', e]));
-  }
+  const vars = (await run('env.show', { app: name })) as EnvList;
+  const { env, envKeys } = await getEnvVars(options.env, vars);
 
   const container = await findContainer(name);
   const volumes = addExecFlag(container.volumes, 'v');
-  const ports = addExecFlag(container.ports, 'p');
-  const extraPorts = addExecFlag(options.ports, 'p');
+  const ports = getPorts([...container.ports.split(','), ...options.ports.split(','), env.PORT + ':' + env.PORT]);
 
-  await exec('docker', [
-    'run',
-    '--detach',
-    '--restart',
-    'always',
-    '--name',
-    name,
-    ...volumes,
-    ...ports,
-    ...extraPorts,
-    ...env,
-    container.image,
-  ]);
+  if (container.host) {
+    await run('px.remove', { domain: container.host });
+    await run('px.add', { domain: container.host, target: 'http://localhost:' + env.PORT, cors: true, redirect: true });
+  }
+
+  await exec(
+    'docker',
+    [
+      'run',
+      '--detach',
+      '--restart',
+      'always',
+      '--name',
+      name,
+      ...volumes,
+      ...ports,
+      ...envKeys.map((e) => '-e' + e),
+      container.image,
+    ],
+    { env },
+  );
 
   return true;
+}
+
+function getPorts(ports: string[]) {
+  const map: Record<string, string> = {};
+
+  ports.forEach((str) => {
+    const [left, right] = str.split(':');
+    map[left] = right;
+  });
+
+  return Object.entries(map).map(([left, right]) => '-p' + left + ':' + right);
+}
+
+async function getEnvVars(inputEnv: string | string[], vars: EnvList) {
+  const port = await getPort();
+  const envVars: EnvList = vars.concat({ key: 'PORT', value: String(port) });
+
+  const additionalEnv = typeof inputEnv === 'string' ? [inputEnv] : inputEnv;
+  if (Array.isArray(additionalEnv)) {
+    additionalEnv.forEach((str) => {
+      const [key, value = ''] = str.split('=');
+      envVars.push({ key, value });
+    });
+  }
+
+  const envKeys: string[] = [];
+  const env: Record<string, any> = {};
+  envVars.forEach(({ key, value }) => {
+    envKeys.push(key);
+    env[key] = String(value);
+  });
+
+  return { env, envKeys: [...new Set(envKeys)] };
 }
 
 export interface StopOptions {
