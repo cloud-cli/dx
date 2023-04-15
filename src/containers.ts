@@ -89,7 +89,7 @@ export async function startContainer(options: RunOptions, { run }: any) {
 function getPorts(ports: string[]) {
   const map: Record<string, string> = {};
 
-  ports.forEach((str) => {
+  ports.filter(Boolean).forEach((str) => {
     const [left, right] = str.split(':');
     map[left] = right;
   });
