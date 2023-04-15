@@ -28,6 +28,15 @@ describe('docker images', () => {
     expect(execMocks.exec).toHaveBeenCalledWith('docker', ['pull', 'test']);
   });
 
+  it('should throw an error if an image was not provided', async () => {
+    execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: '' });
+
+    const output = dx.pull({ image: '' });
+
+    await expect(output).rejects.toThrowError('Image is required')
+    expect(execMocks.exec).not.toHaveBeenCalled();
+  });
+
   it('should prune old images', async () => {
     execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: '' });
 
