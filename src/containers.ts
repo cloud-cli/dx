@@ -40,14 +40,19 @@ export async function getLogs({ name, lines }: GetLogsOptions): Promise<string> 
 
 interface RunOptions {
   name: string;
-  env?: string[] | string;
-  ports?: string;
 }
 
-const defaultRunOptions = { ports: '', env: [] };
+export async function refreshContainer(options: RunOptions, { run }: any) {
+  const { name } = options;
+  const container = await findContainer(name);
+
+  await run('dx.stop', { name });
+  await run('dx.pull', { image: container.image });
+  await run('dx.prune');
+  await run('dx.start', { name });
+}
 
 export async function startContainer(options: RunOptions, { run }: any) {
-  options = { ...defaultRunOptions, ...options };
   const { name } = options;
 
   if (!name) {
@@ -55,15 +60,17 @@ export async function startContainer(options: RunOptions, { run }: any) {
   }
 
   const vars = (await run('env.show', { app: name })) as EnvList;
-  const { env, envKeys } = await getEnvVars(options.env, vars);
+  const { env, envKeys } = await getEnvVars(vars);
 
   const container = await findContainer(name);
   const volumes = addExecFlag(container.volumes, 'v');
-  const ports = getPorts([...container.ports.split(','), ...options.ports.split(','), env.PORT + ':' + env.PORT]);
+  const ports = getPorts([...container.ports.split(','), env.PORT + ':' + env.PORT]);
 
   if (container.host) {
     await run('px.remove', { domain: container.host });
     await run('px.add', { domain: container.host, target: 'http://localhost:' + env.PORT, cors: true, redirect: true });
+    await run('dns.add', { domain: container.host });
+    await run('dns.reload');
   }
 
   await exec(
@@ -97,21 +104,12 @@ function getPorts(ports: string[]) {
   return Object.entries(map).map(([left, right]) => '-p' + left + ':' + right);
 }
 
-async function getEnvVars(inputEnv: string | string[], vars: EnvList) {
+async function getEnvVars(vars: EnvList) {
   const port = await getPort();
-  const envVars: EnvList = vars.concat({ key: 'PORT', value: String(port) });
-
-  const additionalEnv = [inputEnv].flat();
-  if (Array.isArray(additionalEnv)) {
-    additionalEnv.forEach((str) => {
-      let [key, value] = str.split('=');
-      envVars.push({ key, value });
-    });
-  }
-
   const envKeys: string[] = [];
-  const env: Record<string, any> = {};
-  envVars.forEach(({ key, value }) => {
+  const env = { ...process.env };
+
+  vars.concat({ key: 'PORT', value: String(port) }).forEach(({ key, value }) => {
     envKeys.push(key);
     env[key] = String(value);
   });
@@ -122,13 +120,18 @@ async function getEnvVars(inputEnv: string | string[], vars: EnvList) {
 export interface StopOptions {
   name: string;
 }
-export async function stopContainer(options: StopOptions) {
-  if (!options.name) {
+export async function stopContainer(options: StopOptions, { run }: any) {
+  let { name } = options;
+  if (!name) {
     throw new Error('Name is required');
   }
 
-  await exec('docker', ['stop', '-t', '5', options.name]);
-  await exec('docker', ['rm', options.name]);
+  const container = await findContainer(name);
+
+  await exec('docker', ['stop', '-t', '5', name]);
+  await exec('docker', ['rm', name]);
+  await run('dns.remove', { domain: container.host });
+  await run('dns.reload');
 
   return true;
 }

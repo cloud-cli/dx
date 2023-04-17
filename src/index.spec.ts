@@ -152,6 +152,26 @@ describe('running containers', () => {
     });
   });
 
+  describe('update', () => {
+    it('should pull the latest of an image, stop and start a container', async () => {
+      const run = jest.fn();
+      const name = 'update';
+
+      await dx.add({
+        name,
+        image: 'test-image:latest',
+        host: 'run-test.com',
+      });
+
+      await expect(dx.refresh({ name }, { run })).resolves.toEqual(undefined);
+
+      expect(run).toHaveBeenCalledWith('dx.stop', { name });
+      expect(run).toHaveBeenCalledWith('dx.pull', { image: 'test-image:latest' });
+      expect(run).toHaveBeenCalledWith('dx.prune');
+      expect(run).toHaveBeenCalledWith('dx.start', { name });
+    });
+  });
+
   describe('start', () => {
     it('should throw an error if name was not given', async () => {
       const run = jest.fn(() => []);
@@ -175,19 +195,12 @@ describe('running containers', () => {
         { key: 'BAR', value: 'two' },
       ]);
 
-      await expect(
-        dx.start(
-          {
-            name: 'run-test',
-            env: 'FOO=1',
-            ports: '80:90',
-          },
-          { run },
-        ),
-      ).resolves.toEqual(true);
+      await expect(dx.start({ name: 'run-test' }, { run })).resolves.toEqual(true);
 
       expect(run).toHaveBeenCalledWith('env.show', { app: 'run-test' });
       expect(run).toHaveBeenCalledWith('px.remove', { domain: 'run-test.com' });
+      expect(run).toHaveBeenCalledWith('dns.add', { domain: 'run-test.com' });
+      expect(run).toHaveBeenCalledWith('dns.reload');
       expect(run).toHaveBeenCalledWith('px.add', {
         domain: 'run-test.com',
         target: 'http://localhost:1234',
@@ -206,7 +219,7 @@ describe('running containers', () => {
           'run-test',
           '-vlocal:/tmp',
           '-vdisk:/opt',
-          '-p80:90',
+          '-p80:80',
           '-p1234:1234',
           '-p8080:8000',
           '-eFOO',
@@ -214,23 +227,33 @@ describe('running containers', () => {
           '-ePORT',
           'test-image:latest',
         ],
-        { env: { PORT: '1234', FOO: '1', BAR: 'two' } },
+        { env: { ...process.env, PORT: '1234', FOO: 'one', BAR: 'two' } },
       );
     });
   });
 
   describe('stop', () => {
     it('should stop a running container', async () => {
-      const name = 'test';
-      await expect(dx.stop({ name })).resolves.toBe(true);
+      const name = 'stop-test';
+      const run = jest.fn();
+
+      await dx.add({
+        name: 'stop-test',
+        image: 'test-image:latest',
+        host: 'run-test.com',
+      });
+
+      await expect(dx.stop({ name }, { run })).resolves.toBe(true);
 
       expect(exec.exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', name]);
       expect(exec.exec).toHaveBeenCalledWith('docker', ['rm', name]);
+      expect(run).toHaveBeenCalledWith('dns.remove', { domain: 'run-test.com' });
+      expect(run).toHaveBeenCalledWith('dns.reload');
     });
 
     it('should throw an error if name is empty', async () => {
       const name = '';
-      await expect(dx.stop({ name })).rejects.toThrowError('Name is required');
+      await expect(dx.stop({ name }, {})).rejects.toThrowError('Name is required');
 
       expect(exec.exec).not.toHaveBeenCalled();
     });
