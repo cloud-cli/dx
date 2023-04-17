@@ -20,7 +20,7 @@ beforeEach(() => {
 
 describe('docker images', () => {
   it('should pull an image', async () => {
-    execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: '' });
+    execMocks.exec.mockResolvedValueOnce({ ok: true });
 
     const output = dx.pull({ image: 'test' });
 
@@ -29,16 +29,16 @@ describe('docker images', () => {
   });
 
   it('should throw an error if an image was not provided', async () => {
-    execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: '' });
+    execMocks.exec.mockResolvedValueOnce({ ok: true });
 
     const output = dx.pull({ image: '' });
 
-    await expect(output).rejects.toThrowError('Image is required')
+    await expect(output).rejects.toThrowError('Image is required');
     expect(execMocks.exec).not.toHaveBeenCalled();
   });
 
   it('should prune old images', async () => {
-    execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: '' });
+    execMocks.exec.mockResolvedValueOnce({ ok: true });
 
     const output = dx.prune();
 
@@ -165,9 +165,26 @@ describe('running containers', () => {
 
       await expect(dx.refresh({ name }, { run })).resolves.toEqual(undefined);
 
-      expect(run).toHaveBeenCalledWith('dx.stop', { name });
       expect(run).toHaveBeenCalledWith('dx.pull', { image: 'test-image:latest' });
-      expect(run).toHaveBeenCalledWith('dx.prune');
+      expect(run).toHaveBeenCalledWith('dx.stop', { name });
+      expect(run).toHaveBeenCalledWith('dx.prune', {});
+      expect(run).toHaveBeenCalledWith('dx.start', { name });
+    });
+  });
+
+  describe('startAll', () => {
+    it('should start all containers that are not yet running', async () => {
+      const name = 'run-test';
+      await dx.add({ name, image: 'test-image:latest' });
+      await dx.add({ name: 'another-container', image: 'test-image:latest' });
+      execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: 'another-container' });
+
+      const run = jest.fn();
+      await expect(dx.startAll({}, { run })).resolves.toBe(true);
+
+      expect(run).toHaveBeenCalledWith('dx.pull', { image: 'test-image:latest' });
+      expect(run).toHaveBeenCalledWith('dx.stop', { name });
+      expect(run).toHaveBeenCalledWith('dx.prune', {});
       expect(run).toHaveBeenCalledWith('dx.start', { name });
     });
   });
@@ -190,6 +207,7 @@ describe('running containers', () => {
       expect(container.ports).toEqual('80:80,8080:8000');
       expect(container.volumes).toEqual('local:/tmp,disk:/opt');
 
+      execMocks.exec.mockResolvedValueOnce({ ok: true });
       const run = jest.fn(() => [
         { key: 'FOO', value: 'one' },
         { key: 'BAR', value: 'two' },
@@ -200,7 +218,7 @@ describe('running containers', () => {
       expect(run).toHaveBeenCalledWith('env.show', { app: 'run-test' });
       expect(run).toHaveBeenCalledWith('px.remove', { domain: 'run-test.com' });
       expect(run).toHaveBeenCalledWith('dns.add', { domain: 'run-test.com' });
-      expect(run).toHaveBeenCalledWith('dns.reload');
+      expect(run).toHaveBeenCalledWith('dns.reload', {});
       expect(run).toHaveBeenCalledWith('px.add', {
         domain: 'run-test.com',
         target: 'http://localhost:1234',
@@ -230,6 +248,21 @@ describe('running containers', () => {
         { env: { ...process.env, PORT: '1234', FOO: 'one', BAR: 'two' } },
       );
     });
+
+    it('should throw an error if container failed', async () => {
+      await dx.add({
+        name: 'run-test',
+        image: 'test-image:latest',
+      });
+
+      execMocks.exec.mockResolvedValueOnce({ ok: false });
+      const run = jest.fn(() => [
+        { key: 'FOO', value: 'one' },
+        { key: 'BAR', value: 'two' },
+      ]);
+
+      await expect(dx.start({ name: 'run-test' }, { run })).rejects.toThrowError('Failed to start run-test');
+    });
   });
 
   describe('stop', () => {
@@ -248,12 +281,13 @@ describe('running containers', () => {
       expect(exec.exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', name]);
       expect(exec.exec).toHaveBeenCalledWith('docker', ['rm', name]);
       expect(run).toHaveBeenCalledWith('dns.remove', { domain: 'run-test.com' });
-      expect(run).toHaveBeenCalledWith('dns.reload');
+      expect(run).toHaveBeenCalledWith('dns.reload', {});
     });
 
     it('should throw an error if name is empty', async () => {
       const name = '';
-      await expect(dx.stop({ name }, {})).rejects.toThrowError('Name is required');
+      const run = jest.fn();
+      await expect(dx.stop({ name }, { run })).rejects.toThrowError('Name is required');
 
       expect(exec.exec).not.toHaveBeenCalled();
     });
