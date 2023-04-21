@@ -69,6 +69,16 @@ describe('store', () => {
     await expect(dx.remove({ name: 'test' })).rejects.toThrowError('Container not found: test');
   });
 
+  it('should list container entries', async () => {
+    dx.add({ name: 'zest', image: 'test:latest', host: 'zest.com' });
+    dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
+
+    await expect(dx.list()).toEqual([
+      { id: 1, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', ports: '' },
+      { id: 2, name: 'zest', image: 'test:latest', host: 'zest.com', volumes: '', ports: '' },
+    ]);
+  });
+
   it('should allow updates to container properties', async () => {
     await expect(dx.add({ name: 'test', image: 'test:latest', host: 'old.com' })).resolves.toBeTruthy();
     await expect(dx.update({ name: 'invalid' })).rejects.toThrowError('Container not found');
@@ -98,12 +108,12 @@ describe('running containers', () => {
     it('should list running containers by name', async () => {
       execMocks.exec.mockResolvedValueOnce({
         ok: true,
-        stdout: 'fancy-potato',
+        stdout: 'fancy-potato\naltruist-mango\n\n',
       });
 
       const output = dx.ps();
 
-      await expect(output).resolves.toEqual(['fancy-potato']);
+      await expect(output).resolves.toEqual(['altruist-mango', 'fancy-potato']);
       expect(exec.exec).toHaveBeenCalledWith('docker', ['ps', '--format', '{{.Names}}']);
     });
 
@@ -152,7 +162,7 @@ describe('running containers', () => {
     });
   });
 
-  describe('update', () => {
+  describe('refresh', () => {
     it('should pull the latest of an image, stop and start a container', async () => {
       const run = jest.fn();
       const name = 'update';
