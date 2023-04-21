@@ -91,7 +91,7 @@ export async function updateContainer(options: UpdateOptions) {
 
 export async function listContainers() {
   const list = await Resource.find(Container, new Query());
-  return list.sort((a, b) => a.name < b.name  ? -1 : 1);
+  return list.sort((a, b) => Number(a.name > b.name) || -1);
 }
 
 export async function findContainer(name: string): Promise<Container | null> {

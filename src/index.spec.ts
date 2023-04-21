@@ -69,11 +69,13 @@ describe('store', () => {
     await expect(dx.remove({ name: 'test' })).rejects.toThrowError('Container not found: test');
   });
 
-  it('should list container entries', async () => {
+  it('should list container entries, sorted by name', async () => {
     dx.add({ name: 'zest', image: 'test:latest', host: 'zest.com' });
+    dx.add({ name: 'best', image: 'test:latest', host: 'best.com' });
     dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
 
     await expect(dx.list()).toEqual([
+      { id: 1, name: 'best', image: 'test:latest', host: 'best.com', volumes: '', ports: '' },
       { id: 1, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', ports: '' },
       { id: 2, name: 'zest', image: 'test:latest', host: 'zest.com', volumes: '', ports: '' },
     ]);
