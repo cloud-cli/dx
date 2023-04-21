@@ -10,7 +10,7 @@ export async function getRunningContainers(): Promise<string[]> {
     throw new Error('Failed to list containers: ' + ps.stderr);
   }
 
-  return getListFromString(ps.stdout);
+  return getListFromString(ps.stdout).sort();
 }
 
 interface GetLogsOptions {
@@ -49,7 +49,9 @@ export async function startAll(_: any, cli: any) {
   const notRunning = list.filter(({ name }) => !running.includes(name));
 
   for (const app of notRunning) {
-    await refreshContainer({ name: app.name }, cli);
+    try {
+      await refreshContainer({ name: app.name }, cli);
+    } catch {}
   }
 
   return true;
@@ -123,5 +125,3 @@ export async function stopContainer(options: ContainerName, { run }: ServerParam
 
   return true;
 }
-
-
