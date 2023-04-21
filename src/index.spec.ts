@@ -75,9 +75,9 @@ describe('store', () => {
     dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
 
     await expect(dx.list()).toEqual([
-      { id: 1, name: 'best', image: 'test:latest', host: 'best.com', volumes: '', ports: '' },
-      { id: 1, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', ports: '' },
-      { id: 2, name: 'zest', image: 'test:latest', host: 'zest.com', volumes: '', ports: '' },
+      { id: 2, name: 'best', image: 'test:latest', host: 'best.com', volumes: '', ports: '' },
+      { id: 3, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', ports: '' },
+      { id: 1, name: 'zest', image: 'test:latest', host: 'zest.com', volumes: '', ports: '' },
     ]);
   });
 
