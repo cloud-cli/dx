@@ -96,7 +96,7 @@ interface ListOptions {
 }
 
 export async function listContainers(options: ListOptions) {
-  const query = new Query();
+  const query = new Query<Container>();
   ['name', 'image', 'host'].forEach(key => !options[key] || query.where(key).is(options[key]));
   const list = await Resource.find(Container, query);
   
