@@ -58,6 +58,10 @@ export async function startAll(_: any, cli: any) {
 }
 
 export async function refreshContainer(options: ContainerName, { run }: ServerParams) {
+  if (!options.name) {
+    throw new Error('Name is required');
+  }
+
   const { name } = options;
   const container = await findContainer(name);
 
@@ -74,7 +78,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
     throw new Error('Name is required');
   }
 
-  const vars = (await run('env.show', { app: name })) as EnvList;
+  const vars = (await run('env.show', { name })) as EnvList;
   const { env, envKeys } = await getEnvVars(vars);
 
   const container = await findContainer(name);
@@ -82,9 +86,12 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
   const ports = getPorts([...container.ports.split(','), env.PORT + ':' + env.PORT]);
 
   if (container.host) {
-    await run('px.remove', { domain: container.host });
-    await run('px.add', { domain: container.host, target: 'http://localhost:' + env.PORT, cors: true, redirect: true });
-    await run('dns.add', { domain: container.host });
+    const domain = container.host;
+    const proxy = await run('px.get', { domain })
+
+    await run('px.remove', { domain });
+    await run('px.add', { ...proxy, domain, target: 'http://localhost:' + env.PORT });
+    await run('dns.add', { domain });
     await run('dns.reload', {});
   }
 

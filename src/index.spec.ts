@@ -60,11 +60,11 @@ describe('store', () => {
     await expect(dx.add({ name: '', image: '' })).rejects.toThrowError('Name required');
     await expect(dx.add({ name: 'test', image: '' })).rejects.toThrowError('Image required');
     await expect(dx.add({ name: 'test', image: 'test:latest', host: 'test.com' })).resolves.toEqual(expected);
-    await expect(dx.list()).resolves.toEqual([expected]);
+    await expect(dx.list({})).resolves.toEqual([expected]);
     await expect(dx.get({ name: 'test' })).resolves.toEqual(expected);
 
     await expect(dx.remove({ name: 'test' })).resolves.toBe(true);
-    await expect(dx.list()).resolves.toEqual([]);
+    await expect(dx.list({})).resolves.toEqual([]);
 
     await expect(dx.remove({ name: 'test' })).rejects.toThrowError('Container not found: test');
   });
@@ -74,7 +74,7 @@ describe('store', () => {
     dx.add({ name: 'best', image: 'test:latest', host: 'best.com' });
     dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
 
-    await expect(dx.list()).resolves.toEqual([
+    await expect(dx.list({})).resolves.toEqual([
       { id: 2, name: 'best', image: 'test:latest', host: 'best.com', volumes: '', ports: '' },
       { id: 3, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', ports: '' },
       { id: 1, name: 'zest', image: 'test:latest', host: 'zest.com', volumes: '', ports: '' },
@@ -183,6 +183,11 @@ describe('running containers', () => {
   });
 
   describe('refresh', () => {
+    it('should throw an error if name was not given', async () => {
+      const run = jest.fn(() => []);
+      await expect(dx.refresh({ name: '' }, { run })).rejects.toThrowError(new Error('Name is required'));
+    });
+
     it('should pull the latest of an image, stop and start a container', async () => {
       const run = jest.fn();
       const name = 'update';
@@ -238,21 +243,36 @@ describe('running containers', () => {
       expect(container.volumes).toEqual('local:/tmp,disk:/opt');
 
       execMocks.exec.mockResolvedValueOnce({ ok: true });
-      const run = jest.fn(() => [
-        { key: 'FOO', value: 'one' },
-        { key: 'BAR', value: 'two' },
-      ]);
+      const run = jest.fn((cmd: string) => {
+        switch (cmd) {
+          case 'env.show':
+            return [
+              { key: 'FOO', value: 'one' },
+              { key: 'BAR', value: 'two' },
+            ];
+          case 'px.get':
+            return {
+              domain: 'run-test.com',
+              target: 'http://localhost:1234',
+              cors: false,
+              redirect: true,
+            };
+          default:
+            return true;
+        }
+      });
 
       await expect(dx.start({ name: 'run-test' }, { run })).resolves.toEqual(true);
 
       expect(run).toHaveBeenCalledWith('env.show', { app: 'run-test' });
+      expect(run).toHaveBeenCalledWith('px.get', { domain: 'run-test.com' });
       expect(run).toHaveBeenCalledWith('px.remove', { domain: 'run-test.com' });
       expect(run).toHaveBeenCalledWith('dns.add', { domain: 'run-test.com' });
       expect(run).toHaveBeenCalledWith('dns.reload', {});
       expect(run).toHaveBeenCalledWith('px.add', {
         domain: 'run-test.com',
         target: 'http://localhost:1234',
-        cors: true,
+        cors: false,
         redirect: true,
       });
 
