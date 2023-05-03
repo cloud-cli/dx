@@ -89,8 +89,17 @@ export async function updateContainer(options: UpdateOptions) {
   return container;
 }
 
-export async function listContainers() {
-  const list = await Resource.find(Container, new Query());
+interface ListOptions { 
+  name?: string;
+  image?: string;
+  host?: string;
+}
+
+export async function listContainers(options: ListOptions) {
+  const query = new Query();
+  ['name', 'image', 'host'].forEach(key => !options[key] || query.where(key).is(options[key]));
+  const list = await Resource.find(Container, query);
+  
   return list.sort((a, b) => Number(a.name > b.name) || -1);
 }
 

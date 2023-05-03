@@ -81,6 +81,24 @@ describe('store', () => {
     ]);
   });
 
+  it('should list container filtered by name, image or host', async () => {
+    dx.add({ name: 'zest', image: 'zest:latest', host: 'zest.com' });
+    dx.add({ name: 'best', image: 'best:latest', host: 'best.com' });
+    dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
+
+    await expect(dx.list({ name: 'zest' })).resolves.toEqual([
+      { id: 2, name: 'zest', image: 'zest:latest', host: 'zest.com', volumes: '', ports: '' },
+    ]);
+    
+    await expect(dx.list({ image: 'test:latest' })).resolves.toEqual([
+      { id: 3, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', ports: '' },
+    ]);
+    
+    await expect(dx.list({ host: 'best.com' })).resolves.toEqual([
+      { id: 1, name: 'best', image: 'best:latest', host: 'best.com', volumes: '', ports: '' },
+    ]);
+  });
+
   it('should allow updates to container properties', async () => {
     await expect(dx.add({ name: 'test', image: 'test:latest', host: 'old.com' })).resolves.toBeTruthy();
     await expect(dx.update({ name: 'invalid' })).rejects.toThrowError('Container not found');
