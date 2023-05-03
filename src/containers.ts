@@ -43,7 +43,7 @@ export async function getLogs({ name, lines }: GetLogsOptions): Promise<string> 
 }
 
 export async function startAll(_: any, cli: any) {
-  const list = await listContainers();
+  const list = await listContainers({});
   const running = await getRunningContainers();
 
   const notRunning = list.filter(({ name }) => !running.includes(name));

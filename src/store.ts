@@ -27,8 +27,8 @@ export async function addContainer(options: AddContainerOptions): Promise<Contai
   if (!name) throw new Error('Name required');
   if (!image) throw new Error('Image required');
 
-  const volumes = (options.volumes ? sanitiseVolumes(options.volumes) : '');
-  const ports = (options.ports ? sanitisePorts(options.ports) : '');
+  const volumes = options.volumes ? sanitiseVolumes(options.volumes) : '';
+  const ports = options.ports ? sanitisePorts(options.ports) : '';
   const host = options.host;
   const container = new Container({ name, image, volumes, ports, host });
   const id = await container.save();
@@ -70,7 +70,7 @@ export async function updateContainer(options: UpdateOptions) {
   }
 
   if (ports) {
-    container.ports = sanitisePorts(ports)
+    container.ports = sanitisePorts(ports);
   }
 
   if (volumes) {
@@ -89,7 +89,7 @@ export async function updateContainer(options: UpdateOptions) {
   return container;
 }
 
-interface ListOptions { 
+interface ListOptions {
   name?: string;
   image?: string;
   host?: string;
@@ -97,9 +97,9 @@ interface ListOptions {
 
 export async function listContainers(options: ListOptions) {
   const query = new Query<Container>();
-  ['name', 'image', 'host'].forEach(key => !options[key] || query.where(key).is(options[key]));
+  ['name', 'image', 'host'].forEach((key: any) => !options[key] || query.where(key).is(options[key]));
   const list = await Resource.find(Container, query);
-  
+
   return list.sort((a, b) => Number(a.name > b.name) || -1);
 }
 
@@ -110,10 +110,18 @@ export async function findContainer(name: string): Promise<Container | null> {
 
 const portTester = /^\d+:\d+$/;
 function sanitisePorts(ports: string) {
-  return ports.split(optionSplitter).map(s => s.trim()).filter(s => portTester.test(s)).join(',');
+  return ports
+    .split(optionSplitter)
+    .map((s) => s.trim())
+    .filter((s) => portTester.test(s))
+    .join(',');
 }
 
 const volumeTester = /^\S+:\S+$/;
 function sanitiseVolumes(volumes: string) {
-  return volumes.split(optionSplitter).map(s => s.trim()).filter(s => volumeTester.test(s)).join(',');
+  return volumes
+    .split(optionSplitter)
+    .map((s) => s.trim())
+    .filter((s) => volumeTester.test(s))
+    .join(',');
 }

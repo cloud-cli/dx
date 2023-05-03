@@ -87,15 +87,15 @@ describe('store', () => {
     dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
 
     await expect(dx.list({ name: 'zest' })).resolves.toEqual([
-      { id: 2, name: 'zest', image: 'zest:latest', host: 'zest.com', volumes: '', ports: '' },
+      { id: 1, name: 'zest', image: 'zest:latest', host: 'zest.com', volumes: '', ports: '' },
     ]);
-    
+
     await expect(dx.list({ image: 'test:latest' })).resolves.toEqual([
       { id: 3, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', ports: '' },
     ]);
-    
+
     await expect(dx.list({ host: 'best.com' })).resolves.toEqual([
-      { id: 1, name: 'best', image: 'best:latest', host: 'best.com', volumes: '', ports: '' },
+      { id: 2, name: 'best', image: 'best:latest', host: 'best.com', volumes: '', ports: '' },
     ]);
   });
 
@@ -264,7 +264,7 @@ describe('running containers', () => {
 
       await expect(dx.start({ name: 'run-test' }, { run })).resolves.toEqual(true);
 
-      expect(run).toHaveBeenCalledWith('env.show', { app: 'run-test' });
+      expect(run).toHaveBeenCalledWith('env.show', { name: 'run-test' });
       expect(run).toHaveBeenCalledWith('px.get', { domain: 'run-test.com' });
       expect(run).toHaveBeenCalledWith('px.remove', { domain: 'run-test.com' });
       expect(run).toHaveBeenCalledWith('dns.add', { domain: 'run-test.com' });
