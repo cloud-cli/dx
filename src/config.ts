@@ -5,7 +5,9 @@ export interface Config {
 const config: Config = {};
 
 export function setConfig(newConfig: Config) {
-  Object.assign(config, newConfig);
+  if (newConfig) {
+    Object.assign(config, newConfig);
+  }
 }
 
 export function getConfig(name: keyof Config) {
