@@ -1,5 +1,6 @@
 import { exec } from '@cloud-cli/exec';
 import { findContainer, listContainers } from './store.js';
+import { getConfig } from './config.js';
 import { EnvList, addExecFlag, getEnvVars, getListFromString, getPorts } from './utils.js';
 import { ServerParams } from '@cloud-cli/cli';
 
@@ -87,12 +88,16 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
 
   if (container.host) {
     const domain = container.host;
-    const proxy = await run('px.get', { domain })
 
-    await run('px.remove', { domain });
-    await run('px.add', { ...proxy, domain, target: 'http://localhost:' + env.PORT });
+    await run('px.update', { domain, target: 'http://localhost:' + env.PORT });
     await run('dns.add', { domain });
     await run('dns.reload', {});
+  }
+
+  const dnsOption = [];
+
+  if (getConfig('dns')) {
+    dnsOption.push('--dns=' + getConfig('dns'));
   }
 
   const execArgs = [
@@ -102,13 +107,15 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
     'always',
     '--name',
     name,
+    ...dnsOption,
     ...volumes,
     ...ports,
     ...envKeys.map((e) => '-e' + e),
     container.image,
   ];
 
-  const output = await exec('docker', execArgs, { env });
+  const output = await exec('docker', execArgs.filter(Boolean), { env });
+
   if (!output.ok) {
     throw new Error('Failed to start ' + name);
   }

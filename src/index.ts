@@ -4,11 +4,14 @@ import { Container } from './store.js';
 import { getRunningContainers, getLogs, startContainer, stopContainer, refreshContainer, startAll } from './containers.js';
 import { addContainer, removeContainer, listContainers, updateContainer, getContainer } from './store.js';
 import { pull, prune } from './images.js';
+import { setConfig, Config } from './config';
 
 async function initResource() {
   Resource.use(new SQLiteDriver());
   await Resource.create(Container);
 }
+
+export { Config } from './config';
 
 export default {
   pull,
@@ -25,7 +28,8 @@ export default {
   ps: getRunningContainers,
   logs: getLogs,
 
-  async [init]() {
+  async [init](config?: Config) {
+    setConfig(config);
     await initResource();
   }
 }

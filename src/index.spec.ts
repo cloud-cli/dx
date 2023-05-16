@@ -250,13 +250,6 @@ describe('running containers', () => {
               { key: 'FOO', value: 'one' },
               { key: 'BAR', value: 'two' },
             ];
-          case 'px.get':
-            return {
-              domain: 'run-test.com',
-              target: 'http://localhost:1234',
-              cors: false,
-              redirect: true,
-            };
           default:
             return true;
         }
@@ -265,16 +258,9 @@ describe('running containers', () => {
       await expect(dx.start({ name: 'run-test' }, { run })).resolves.toEqual(true);
 
       expect(run).toHaveBeenCalledWith('env.show', { name: 'run-test' });
-      expect(run).toHaveBeenCalledWith('px.get', { domain: 'run-test.com' });
-      expect(run).toHaveBeenCalledWith('px.remove', { domain: 'run-test.com' });
+      expect(run).toHaveBeenCalledWith('px.update', { domain: 'run-test.com', target: 'http://localhost:1234' });
       expect(run).toHaveBeenCalledWith('dns.add', { domain: 'run-test.com' });
       expect(run).toHaveBeenCalledWith('dns.reload', {});
-      expect(run).toHaveBeenCalledWith('px.add', {
-        domain: 'run-test.com',
-        target: 'http://localhost:1234',
-        cors: false,
-        redirect: true,
-      });
 
       expect(exec.exec).toHaveBeenCalledWith(
         'docker',
@@ -285,6 +271,7 @@ describe('running containers', () => {
           'always',
           '--name',
           'run-test',
+          '--dns=1.2.3.4',
           '-vlocal:/tmp',
           '-vdisk:/opt',
           '-p80:80',
