@@ -1,8 +1,8 @@
 import { exec } from '@cloud-cli/exec';
+import { ServerParams } from '@cloud-cli/cli';
 import { findContainer, listContainers } from './store.js';
 import { getConfig } from './config.js';
 import { EnvList, addExecFlag, getEnvVars, getListFromString, getPorts } from './utils.js';
-import { ServerParams } from '@cloud-cli/cli';
 
 export async function getRunningContainers(): Promise<string[]> {
   const ps = await exec('docker', ['ps', '--format', '{{.Names}}']);
