@@ -231,6 +231,8 @@ describe('running containers', () => {
     });
 
     it('should run a container created previously', async () => {
+      dx[init]({ dns: '1.2.3.4' });
+
       const container = await dx.add({
         name: 'run-test',
         image: 'test-image:latest',
@@ -255,7 +257,6 @@ describe('running containers', () => {
         }
       });
 
-      dx[init]({ dns: '1.2.3.4' });
       await expect(dx.start({ name: 'run-test' }, { run })).resolves.toEqual(true);
 
       expect(run).toHaveBeenCalledWith('env.show', { name: 'run-test' });
