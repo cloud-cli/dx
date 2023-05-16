@@ -255,6 +255,7 @@ describe('running containers', () => {
         }
       });
 
+      dx[init]({ dns: '1.2.3.4' });
       await expect(dx.start({ name: 'run-test' }, { run })).resolves.toEqual(true);
 
       expect(run).toHaveBeenCalledWith('env.show', { name: 'run-test' });
