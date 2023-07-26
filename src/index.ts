@@ -1,7 +1,7 @@
 import { init } from '@cloud-cli/cli';
 import { Resource, SQLiteDriver } from '@cloud-cli/store';
 import { Container } from './store.js';
-import { getRunningContainers, getLogs, startContainer, stopContainer, refreshContainer, startAll } from './containers.js';
+import { getRunningContainers, getLogs, startContainer, stopContainer, refreshContainer, startAll, restartContainer } from './containers.js';
 import { addContainer, removeContainer, listContainers, updateContainer, getContainer } from './store.js';
 import { pull, prune } from './images.js';
 import { setConfig, Config } from './config.js';
@@ -25,6 +25,7 @@ export default {
   startAll,
   start: startContainer,
   stop: stopContainer,
+  restart: restartContainer,
   ps: getRunningContainers,
   logs: getLogs,
 

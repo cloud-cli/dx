@@ -208,6 +208,24 @@ describe('running containers', () => {
     });
   });
 
+  describe('restart', () => {
+    it('should restart a container', async () => {
+      const run = jest.fn();
+      const name = 'update';
+
+      await dx.add({
+        name,
+        image: 'test-image:latest',
+        host: 'run-test.com',
+      });
+
+      await expect(dx.restart({ name }, { run })).resolves.toEqual(undefined);
+
+      expect(run).toHaveBeenCalledWith('dx.stop', { name });
+      expect(run).toHaveBeenCalledWith('dx.start', { name });
+    });
+  })
+
   describe('startAll', () => {
     it('should start all containers that are not yet running', async () => {
       const name = 'run-test';

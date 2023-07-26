@@ -72,6 +72,13 @@ export async function refreshContainer(options: ContainerName, { run }: ServerPa
   await run('dx.start', { name });
 }
 
+export async function restartContainer(options: ContainerName, { run }: ServerParams) {
+  const { name } = options;
+
+  await run('dx.stop', { name });
+  await run('dx.start', { name });
+}
+
 export async function startContainer(options: ContainerName, { run }: ServerParams) {
   const { name } = options;
 
