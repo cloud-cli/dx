@@ -37,7 +37,7 @@ export async function getLogs({ name, lines }: GetLogsOptions): Promise<string> 
   const sh = await exec('docker', args);
 
   if (sh.ok) {
-    return sh.stdout;
+    return [sh.stdout, sh.stderr].join('\n');
   }
 
   return '';

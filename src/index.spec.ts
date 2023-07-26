@@ -173,11 +173,12 @@ describe('running containers', () => {
       execMocks.exec.mockResolvedValueOnce({
         ok: true,
         stdout: 'Running...',
+        stderr: 'Ops!'
       });
 
       const output = dx.logs({ name: 'test', lines: '100' });
 
-      await expect(output).resolves.toEqual('Running...');
+      await expect(output).resolves.toEqual('Running...\nOps!');
       expect(execMocks.exec).toHaveBeenCalledWith('docker', ['logs', 'test', '-n', '100']);
     });
   });
