@@ -77,6 +77,8 @@ export async function restartContainer(options: ContainerName, { run }: ServerPa
 
   await run('dx.stop', { name });
   await run('dx.start', { name });
+
+  return name;
 }
 
 export async function startContainer(options: ContainerName, { run }: ServerParams) {

@@ -219,7 +219,7 @@ describe('running containers', () => {
         host: 'run-test.com',
       });
 
-      await expect(dx.restart({ name }, { run })).resolves.toEqual(undefined);
+      await expect(dx.restart({ name }, { run })).resolves.toEqual(name);
 
       expect(run).toHaveBeenCalledWith('dx.stop', { name });
       expect(run).toHaveBeenCalledWith('dx.start', { name });
