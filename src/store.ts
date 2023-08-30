@@ -33,7 +33,7 @@ export async function addContainer(options: AddContainerOptions): Promise<Contai
   const container = new Container({ name, image, volumes, ports, host });
   const id = await container.save();
 
-  container.id = id;
+  container.id = Number(id);
 
   return container;
 }

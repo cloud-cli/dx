@@ -137,12 +137,15 @@ export async function stopContainer(options: ContainerName, { run }: ServerParam
     throw new Error('Name is required');
   }
 
-  const container = await findContainer(name);
-
   await exec('docker', ['stop', '-t', '5', name]);
   await exec('docker', ['rm', name]);
-  await run('dns.remove', { domain: container.host });
-  await run('dns.reload', {});
+
+  const containers = [await findContainer(name)].filter(Boolean);
+
+  for (const container of containers) {
+    await run('dns.remove', { domain: container.host });
+    await run('dns.reload', {});
+  }
 
   return true;
 }
