@@ -151,17 +151,6 @@ describe('running containers', () => {
   });
 
   describe('logs', () => {
-    it('should return an empty string if failed', async () => {
-      execMocks.exec.mockResolvedValueOnce({
-        ok: false,
-        stdout: 'Running...',
-      });
-
-      const output = dx.logs({ name: 'test' });
-
-      await expect(output).resolves.toEqual('');
-    });
-
     it('should throw an error', async () => {
       const output = dx.logs({ name: '' });
 

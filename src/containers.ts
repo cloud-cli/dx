@@ -2,7 +2,13 @@ import { exec } from '@cloud-cli/exec';
 import { ServerParams } from '@cloud-cli/cli';
 import { findContainer, listContainers } from './store.js';
 import { getConfig } from './config.js';
-import { EnvList, addExecFlag, getEnvVars, getListFromString, getPorts } from './utils.js';
+import {
+  EnvList,
+  addExecFlag,
+  getEnvVars,
+  getListFromString,
+  getPorts,
+} from './utils.js';
 
 export async function getRunningContainers(): Promise<string[]> {
   const ps = await exec('docker', ['ps', '--format', '{{.Names}}']);
@@ -36,11 +42,7 @@ export async function getLogs({ name, lines }: GetLogsOptions): Promise<string> 
 
   const sh = await exec('docker', args);
 
-  if (sh.ok) {
-    return [sh.stdout, sh.stderr].join('\n');
-  }
-
-  return '';
+  return [sh.stderr, sh.stdout].join('\n---\n');
 }
 
 export async function startAll(_: any, cli: any) {
@@ -139,14 +141,13 @@ export async function stopContainer(options: ContainerName, { run }: ServerParam
     throw new Error('Name is required');
   }
 
-  await exec('docker', ['stop', '-t', '5', name]);
+  await exec('docker', ['stop', '-t', '1', name]);
   await exec('docker', ['rm', name]);
 
   const containers = [await findContainer(name)].filter(Boolean);
 
   for (const container of containers) {
     await run('dns.remove', { domain: container.host });
-    await run('dns.reload', {});
   }
 
   return true;
