@@ -1,5 +1,5 @@
 import { exec } from '@cloud-cli/exec';
-import { readTargetImage } from './utils';
+import { readTargetImage } from './utils.js';
 
 export async function pull(options: { image: string }) {
   readTargetImage(options);

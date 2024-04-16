@@ -1,5 +1,5 @@
 import { Model, Resource, Primary, NotNull, Property, Query } from '@cloud-cli/store';
-import { readTargetImage, readTargetName } from './utils';
+import { readTargetImage, readTargetName } from './utils.js';
 
 @Model('container')
 export class Container extends Resource {
