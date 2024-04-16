@@ -167,7 +167,7 @@ describe('running containers', () => {
 
       const output = dx.logs({ name: 'test', lines: '100' });
 
-      await expect(output).resolves.toEqual('Running...\nOps!');
+      await expect(output).resolves.toEqual('Running...\n\nOps!');
       expect(execMocks.exec).toHaveBeenCalledWith('docker', ['logs', 'test', '-n', '100']);
     });
   });
