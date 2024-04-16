@@ -38,5 +38,15 @@ export function addExecFlag(string: string, flag: string) {
 }
 
 export function readTargetName(args) {
-  args.name = [args.name, args._[0]].filter(Boolean)[0];
+  readPositionalArgs(args, 'name');
+}
+
+export function readTargetImage(args) {
+  readPositionalArgs(args, 'image');
+}
+
+function readPositionalArgs(args, name) {
+  if (!args[name]) {
+    args[name] = (args._ || []).shift();
+  }
 }

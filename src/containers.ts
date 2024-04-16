@@ -22,11 +22,13 @@ export async function getRunningContainers(): Promise<string[]> {
 }
 
 interface GetLogsOptions {
+  _?: string[];
   name: string;
   lines?: string;
 }
 
 interface ContainerName {
+  _?: string[];
   name: string;
 }
 
@@ -135,6 +137,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
   const output = await exec('docker', execArgs.filter(Boolean), { env });
 
   if (!output.ok) {
+    console.log([output.stdout, output.stderr].join('\n\n'));
     throw new Error('Failed to start ' + name);
   }
 

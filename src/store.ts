@@ -1,4 +1,5 @@
 import { Model, Resource, Primary, NotNull, Property, Query } from '@cloud-cli/store';
+import { readTargetImage, readTargetName } from './utils';
 
 @Model('container')
 export class Container extends Resource {
@@ -11,6 +12,7 @@ export class Container extends Resource {
 }
 
 interface ContainerName {
+  _?: string[];
   name: string;
 }
 
@@ -22,6 +24,8 @@ interface AddContainerOptions extends ContainerName {
 }
 
 export async function addContainer(options: AddContainerOptions): Promise<Container> {
+  readTargetName(options);
+  readTargetImage(options);
   const { name, image } = options;
 
   if (!name) throw new Error('Name required');
@@ -39,6 +43,7 @@ export async function addContainer(options: AddContainerOptions): Promise<Contai
 }
 
 export async function removeContainer(options: ContainerName) {
+  readTargetName(options);
   const found = await findContainer(options.name);
 
   if (found) {
@@ -50,6 +55,7 @@ export async function removeContainer(options: ContainerName) {
 }
 
 export async function getContainer(options: ContainerName) {
+  readTargetName(options);
   return await findContainer(options.name);
 }
 
@@ -62,6 +68,7 @@ interface UpdateOptions extends ContainerName {
 const optionSplitter = /,\s*/;
 
 export async function updateContainer(options: UpdateOptions) {
+  readTargetName(options);
   let { ports, volumes, name, image, host } = options;
   const container = await findContainer(name);
 
