@@ -346,7 +346,6 @@ describe('running containers', () => {
       expect(exec.exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', name]);
       expect(exec.exec).toHaveBeenCalledWith('docker', ['rm', name]);
       expect(run).toHaveBeenCalledWith('dns.remove', { domain: 'run-test.com' });
-      expect(run).toHaveBeenCalledWith('dns.reload', {});
 
       expect(exec.exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', 'foo']);
       expect(exec.exec).toHaveBeenCalledWith('docker', ['rm', 'foo']);

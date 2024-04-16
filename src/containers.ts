@@ -48,7 +48,7 @@ export async function getLogs(options: GetLogsOptions): Promise<string> {
 
   const sh = await exec('docker', args);
 
-  return [sh.stderr, sh.stdout].join('\n\n').trim();
+  return [sh.stdout, sh.stderr].join('\n\n').trim();
 }
 
 export async function startAll(_: any, cli: any) {
