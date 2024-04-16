@@ -8,6 +8,7 @@ import {
   getEnvVars,
   getListFromString,
   getPorts,
+  readTargetName,
 } from './utils.js';
 
 export async function getRunningContainers(): Promise<string[]> {
@@ -29,7 +30,10 @@ interface ContainerName {
   name: string;
 }
 
-export async function getLogs({ name, lines }: GetLogsOptions): Promise<string> {
+export async function getLogs(options: GetLogsOptions): Promise<string> {
+  readTargetName(options);
+  const { name, lines } = options;
+
   if (!name) {
     throw new Error('Name not specified');
   }
@@ -61,6 +65,7 @@ export async function startAll(_: any, cli: any) {
 }
 
 export async function refreshContainer(options: ContainerName, { run }: ServerParams) {
+  readTargetName(options);
   if (!options.name) {
     throw new Error('Name is required');
   }
@@ -75,15 +80,17 @@ export async function refreshContainer(options: ContainerName, { run }: ServerPa
 }
 
 export async function restartContainer(options: ContainerName, { run }: ServerParams) {
+  readTargetName(options);
   const { name } = options;
 
   await run('dx.stop', { name });
   await run('dx.start', { name });
 
-  return name;
+  return true;
 }
 
 export async function startContainer(options: ContainerName, { run }: ServerParams) {
+  readTargetName(options);
   const { name } = options;
 
   if (!name) {
@@ -135,6 +142,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
 }
 
 export async function stopContainer(options: ContainerName, { run }: ServerParams) {
+  readTargetName(options);
   let { name } = options;
 
   if (!name) {

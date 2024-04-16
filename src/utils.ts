@@ -36,3 +36,7 @@ export function addExecFlag(string: string, flag: string) {
     .filter(Boolean)
     .map((p) => `-${flag}${p}`);
 }
+
+export function readTargetName(args) {
+  args.name = [args.name, args._[0]].filter(Boolean)[0];
+}
