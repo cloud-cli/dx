@@ -48,7 +48,7 @@ export async function getLogs(options: GetLogsOptions): Promise<string> {
 
   const sh = await exec('docker', args);
 
-  return [sh.stderr, sh.stdout].join('\n---\n');
+  return [sh.stderr, sh.stdout].join('\n\n').trim();
 }
 
 export async function startAll(_: any, cli: any) {
@@ -152,7 +152,7 @@ export async function stopContainer(options: ContainerName, { run }: ServerParam
     throw new Error('Name is required');
   }
 
-  await exec('docker', ['stop', '-t', '1', name]);
+  await exec('docker', ['stop', '-t', '5', name]);
   await exec('docker', ['rm', name]);
 
   const containers = [await findContainer(name)].filter(Boolean);
