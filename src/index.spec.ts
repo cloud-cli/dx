@@ -220,11 +220,12 @@ describe('running containers', () => {
 
       await dx.add({
         _: [name],
+        name: '',
         image: 'test-image:latest',
         host: 'run-test.com',
       });
 
-      await expect(dx.restart({ _: [name] }, { run })).resolves.toEqual(true);
+      await expect(dx.restart({ _: [name], name: '' }, { run })).resolves.toEqual(true);
 
       expect(run).toHaveBeenCalledWith('dx.stop', { name });
       expect(run).toHaveBeenCalledWith('dx.start', { name });
