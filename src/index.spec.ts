@@ -55,7 +55,7 @@ describe('store', () => {
       host: 'test.com',
       image: 'test:latest',
       volumes: '',
-      ports: '',
+      port: '',
     };
     await expect(dx.add({ name: '', image: '' })).rejects.toThrowError('Name required');
     await expect(dx.add({ name: 'test', image: '' })).rejects.toThrowError('Image required');
@@ -75,9 +75,9 @@ describe('store', () => {
     dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
 
     await expect(dx.list({})).resolves.toEqual([
-      { id: 2, name: 'best', image: 'test:latest', host: 'best.com', volumes: '', ports: '' },
-      { id: 3, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', ports: '' },
-      { id: 1, name: 'zest', image: 'test:latest', host: 'zest.com', volumes: '', ports: '' },
+      { id: 2, name: 'best', image: 'test:latest', host: 'best.com', volumes: '', port: '' },
+      { id: 3, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', port: '' },
+      { id: 1, name: 'zest', image: 'test:latest', host: 'zest.com', volumes: '', port: '' },
     ]);
   });
 
@@ -87,15 +87,15 @@ describe('store', () => {
     dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
 
     await expect(dx.list({ name: 'zest' })).resolves.toEqual([
-      { id: 1, name: 'zest', image: 'zest:latest', host: 'zest.com', volumes: '', ports: '' },
+      { id: 1, name: 'zest', image: 'zest:latest', host: 'zest.com', volumes: '', port: '' },
     ]);
 
     await expect(dx.list({ image: 'test:latest' })).resolves.toEqual([
-      { id: 3, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', ports: '' },
+      { id: 3, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', port: '' },
     ]);
 
     await expect(dx.list({ host: 'best.com' })).resolves.toEqual([
-      { id: 2, name: 'best', image: 'best:latest', host: 'best.com', volumes: '', ports: '' },
+      { id: 2, name: 'best', image: 'best:latest', host: 'best.com', volumes: '', port: '' },
     ]);
   });
 
@@ -105,7 +105,7 @@ describe('store', () => {
     const properties = {
       host: 'new.com',
       name: 'test',
-      ports: '80:80, 8080:8000, invalid:123',
+      port: '80:80, 8080:8000, invalid:123',
       volumes: 'local:/tmp, disk:/opt, invalid:',
       image: 'other:latest',
     };
@@ -115,7 +115,7 @@ describe('store', () => {
       name: 'test',
       image: 'other:latest',
       volumes: 'local:/tmp,disk:/opt',
-      ports: '80:80,8080:8000',
+      port: '80:80,8080:8000',
       host: 'new.com',
     };
 
@@ -262,11 +262,11 @@ describe('running containers', () => {
         name: 'run-test',
         image: 'test-image:latest',
         host: 'run-test.com',
-        ports: '80:80, 8080:8000, invalid:123',
+        port: '8081',
         volumes: 'local:/tmp, disk:/opt, invalid:',
       });
 
-      expect(container.ports).toEqual('80:80,8080:8000');
+      expect(container.port).toEqual('8081');
       expect(container.volumes).toEqual('local:/tmp,disk:/opt');
 
       execMocks.exec.mockResolvedValueOnce({ ok: true });

@@ -7,7 +7,6 @@ import {
   addExecFlag,
   getEnvVars,
   getListFromString,
-  getPorts,
   readTargetName,
 } from './utils.js';
 
@@ -104,7 +103,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
 
   const container = await findContainer(name);
   const volumes = addExecFlag(container.volumes, 'v');
-  const ports = getPorts([...container.ports.split(','), env.PORT + ':' + env.PORT]);
+  const ports = ['-p', env.PORT + ':' + (container.port || env.PORT)];
 
   if (container.host) {
     const domain = container.host;

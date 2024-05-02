@@ -7,7 +7,7 @@ export class Container extends Resource {
   @NotNull() @Property(String) name: string;
   @NotNull() @Property(String) image: string;
   @NotNull() @Property(String) host: string;
-  @NotNull() @Property(String) ports: string;
+  @NotNull() @Property(String) port: string;
   @NotNull() @Property(String) volumes: string;
 }
 
@@ -16,14 +16,20 @@ interface ContainerName {
   name: string;
 }
 
-interface AddContainerOptions extends ContainerName {
+interface ContainerUpdateOptions extends ContainerName {
   image: string;
   host?: string;
   volumes?: string;
-  ports?: string;
+  port?: string;
 }
 
-export async function addContainer(options: AddContainerOptions): Promise<Container> {
+interface ContainerListOptions {
+  name?: string;
+  image?: string;
+  host?: string;
+}
+
+export async function addContainer(options: ContainerUpdateOptions): Promise<Container> {
   readTargetName(options);
   readTargetImage(options);
   const { name, image } = options;
@@ -32,9 +38,9 @@ export async function addContainer(options: AddContainerOptions): Promise<Contai
   if (!image) throw new Error('Image required');
 
   const volumes = options.volumes ? sanitiseVolumes(options.volumes) : '';
-  const ports = options.ports ? sanitisePorts(options.ports) : '';
+  const port = options.port || '';
   const host = options.host;
-  const container = new Container({ name, image, volumes, ports, host });
+  const container = new Container({ name, image, volumes, port, host });
   const id = await container.save();
 
   container.id = Number(id);
@@ -59,25 +65,19 @@ export async function getContainer(options: ContainerName) {
   return await findContainer(options.name);
 }
 
-interface UpdateOptions extends ContainerName {
-  ports?: string;
-  volumes?: string;
-  image?: string;
-  host?: string;
-}
 const optionSplitter = /,\s*/;
 
-export async function updateContainer(options: UpdateOptions) {
+export async function updateContainer(options: Partial<ContainerUpdateOptions>) {
   readTargetName(options);
-  let { ports, volumes, name, image, host } = options;
+  let { port, volumes, name, image, host } = options;
   const container = await findContainer(name);
 
   if (!container) {
     throw new Error('Container not found');
   }
 
-  if (ports) {
-    container.ports = sanitisePorts(ports);
+  if (port) {
+    container.port = port
   }
 
   if (volumes) {
@@ -96,15 +96,10 @@ export async function updateContainer(options: UpdateOptions) {
   return container;
 }
 
-interface ListOptions {
-  name?: string;
-  image?: string;
-  host?: string;
-}
-
-export async function listContainers(options: ListOptions) {
+export async function listContainers(options: ContainerListOptions) {
   const query = new Query<Container>();
-  ['name', 'image', 'host'].forEach((key: any) => !options[key] || query.where(key).is(options[key]));
+  const keys: Array<keyof Container> = ['name', 'image', 'host', 'port', 'volumes'];
+  keys.forEach((key: any) => !options[key] || query.where(key).isLike(options[key]));
   const list = await Resource.find(Container, query);
 
   return list.sort((a, b) => Number(a.name > b.name) || -1);
@@ -113,15 +108,6 @@ export async function listContainers(options: ListOptions) {
 export async function findContainer(name: string): Promise<Container | null> {
   const found = await Resource.find(Container, new Query<Container>().where('name').is(name));
   return found[0] || null;
-}
-
-const portTester = /^\d+:\d+$/;
-function sanitisePorts(ports: string) {
-  return ports
-    .split(optionSplitter)
-    .map((s) => s.trim())
-    .filter((s) => portTester.test(s))
-    .join(',');
 }
 
 const volumeTester = /^\S+:\S+$/;

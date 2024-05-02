@@ -2,17 +2,6 @@ import getPort from 'get-port';
 
 export type EnvList = Array<{ key: string; value: string }>;
 
-export function getPorts(ports: string[]) {
-  const map: Record<string, string> = {};
-
-  ports.filter(Boolean).forEach((str) => {
-    const [left, right] = str.split(':');
-    map[left] = right;
-  });
-
-  return Object.entries(map).map(([left, right]) => '-p' + left + ':' + right);
-}
-
 export async function getEnvVars(vars: EnvList) {
   const port = await getPort();
   const envKeys: string[] = [];
