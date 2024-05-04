@@ -7,8 +7,7 @@
   "type": "module",
   "prettier": "@cloud-cli/prettier-config",
   "scripts": {
-    "test": "jest",
-    "tdd": "jest --watch",
+    "test": "vitest",
     "build": "rm -rf ./dist/* && tsc"
   },
   "keywords": [
@@ -19,6 +18,7 @@
   "devDependencies": {
     "@cloud-cli/prettier-config": "^1.0.0",
     "@cloud-cli/typescript-config": "^1.0.1",
+    "@types/node": "^20.12.8",
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"
   },
