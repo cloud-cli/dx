@@ -1,14 +1,8 @@
 import { exec } from '@cloud-cli/exec';
-import { ServerParams } from '@cloud-cli/cli';
+import { ServerParams, getConfig } from '@cloud-cli/cli';
 import { findContainer, listContainers } from './store.js';
-import { getConfig } from './config.js';
-import {
-  EnvList,
-  addExecFlag,
-  getEnvVars,
-  getListFromString,
-  readTargetName,
-} from './utils.js';
+import { EnvList, addExecFlag, getEnvVars, getListFromString, readTargetName } from './utils.js';
+import { Config, ExtraOptions } from './types.js';
 
 export async function getRunningContainers(): Promise<string[]> {
   const ps = await exec('docker', ['ps', '--format', '{{.Names}}']);
@@ -20,14 +14,12 @@ export async function getRunningContainers(): Promise<string[]> {
   return getListFromString(ps.stdout).sort();
 }
 
-interface GetLogsOptions {
-  _?: string[];
+interface GetLogsOptions extends ExtraOptions {
   name: string;
   lines?: string;
 }
 
-interface ContainerName {
-  _?: string[];
+interface ContainerName extends ExtraOptions {
   name: string;
 }
 
@@ -103,20 +95,24 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
 
   const container = await findContainer(name);
   const volumes = addExecFlag(container.volumes, 'v');
-  const ports = ['-p', env.PORT + ':' + (container.port || env.PORT)];
+  const ports = ['-p' + env.PORT + ':' + (container.port || env.PORT)];
 
   if (container.host) {
     const domain = container.host;
 
     await run('px.update', { domain, target: 'http://localhost:' + env.PORT });
     await run('dns.add', { domain });
-    await run('dns.reload', {});
   }
 
-  const dnsOption = [];
+  const extraArgs = [];
+  const config = await getConfig<Config>('dx');
 
-  if (getConfig('dns')) {
-    dnsOption.push('--dns=' + getConfig('dns'));
+  if (config.dns) {
+    extraArgs.push('--dns=' + config.dns);
+  }
+
+  if (config.dockerArgs) {
+    extraArgs.push(...config.dockerArgs);
   }
 
   const execArgs = [
@@ -126,7 +122,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
     'always',
     '--name',
     name,
-    ...dnsOption,
+    ...extraArgs,
     ...volumes,
     ...ports,
     ...envKeys.map((e) => '-e' + e),

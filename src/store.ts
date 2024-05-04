@@ -1,18 +1,10 @@
-import { Model, Resource, Primary, NotNull, Property, Query } from '@cloud-cli/store';
+import type { Container, ExtraOptions } from './types.js';
 import { readTargetImage, readTargetName } from './utils.js';
+import { getStorage } from '@cloud-cli/cli';
 
-@Model('container')
-export class Container extends Resource {
-  @Primary() @NotNull() @Property(Number) id: number;
-  @NotNull() @Property(String) name: string;
-  @NotNull() @Property(String) image: string;
-  @NotNull() @Property(String) host: string;
-  @NotNull() @Property(String) port: string;
-  @NotNull() @Property(String) volumes: string;
-}
+const { get, set, has, remove, getAll } = getStorage<Container>('dx');
 
-interface ContainerName {
-  _?: string[];
+interface ContainerName extends ExtraOptions {
   name: string;
 }
 
@@ -23,61 +15,54 @@ interface ContainerUpdateOptions extends ContainerName {
   port?: string;
 }
 
-interface ContainerListOptions {
-  name?: string;
-  image?: string;
-  host?: string;
-}
+type ContainerListOptions = Partial<Container>;
 
-export async function addContainer(options: ContainerUpdateOptions): Promise<Container> {
+export function addContainer(options: ContainerUpdateOptions): Container {
   readTargetName(options);
   readTargetImage(options);
   const { name, image } = options;
-
   if (!name) throw new Error('Name required');
   if (!image) throw new Error('Image required');
 
   const volumes = options.volumes ? sanitiseVolumes(options.volumes) : '';
   const port = options.port || '';
   const host = options.host;
-  const container = new Container({ name, image, volumes, port, host });
-  const id = await container.save();
+  const container: Container = { name, image, volumes, port, host };
 
-  container.id = Number(id);
+  set(name, container);
 
   return container;
 }
 
-export async function removeContainer(options: ContainerName) {
+export function removeContainer(options: ContainerName) {
   readTargetName(options);
-  const found = await findContainer(options.name);
 
-  if (found) {
-    await found.remove();
+  if (has(options.name)) {
+    remove(options.name);
     return true;
   }
 
   throw new Error('Container not found: ' + options.name);
 }
 
-export async function getContainer(options: ContainerName) {
+export function getContainer(options: ContainerName) {
   readTargetName(options);
-  return await findContainer(options.name);
+  return get(options.name);
 }
 
 const optionSplitter = /,\s*/;
 
-export async function updateContainer(options: Partial<ContainerUpdateOptions>) {
+export function updateContainer(options: Partial<ContainerUpdateOptions>) {
   readTargetName(options);
   let { port, volumes, name, image, host } = options;
-  const container = await findContainer(name);
+  const container = get(name);
 
   if (!container) {
     throw new Error('Container not found');
   }
 
   if (port) {
-    container.port = port
+    container.port = port;
   }
 
   if (volumes) {
@@ -92,22 +77,27 @@ export async function updateContainer(options: Partial<ContainerUpdateOptions>) 
     container.host = host;
   }
 
-  await container.save();
+  set(container.name, container);
   return container;
 }
 
-export async function listContainers(options: ContainerListOptions) {
-  const query = new Query<Container>();
+export function listContainers(options: ContainerListOptions = {}) {
   const keys: Array<keyof Container> = ['name', 'image', 'host', 'port', 'volumes'];
-  keys.forEach((key: any) => !options[key] || query.where(key).isLike(options[key]));
-  const list = await Resource.find(Container, query);
+  const list = getAll();
 
-  return list.sort((a, b) => Number(a.name > b.name) || -1);
+  const filtered = keys.reduce((list, key) => {
+    if (options[key]) {
+      return list.filter((c) => String(c[key]).toLowerCase().includes(options[key].toLowerCase()));
+    }
+
+    return list;
+  }, list);
+
+  return filtered.sort((a, b) => Number(a.name > b.name) || -1);
 }
 
-export async function findContainer(name: string): Promise<Container | null> {
-  const found = await Resource.find(Container, new Query<Container>().where('name').is(name));
-  return found[0] || null;
+export function findContainer(name: string) {
+  return get(name);
 }
 
 const volumeTester = /^\S+:\S+$/;

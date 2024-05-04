@@ -1,6 +1,7 @@
 coverage/
 dist/*.spec.*
 src/
+data/
 .github
 tsconfig.json
 jest.*

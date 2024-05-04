@@ -17,10 +17,10 @@
   "license": "MIT",
   "author": "Darlan Alves <me@darlanalv.es>",
   "devDependencies": {
-    "@cloud-cli/jest-config": "^1.0.0",
     "@cloud-cli/prettier-config": "^1.0.0",
     "@cloud-cli/typescript-config": "^1.0.1",
-    "typescript": "^4.4.2"
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
   },
   "repository": {
     "type": "git",
@@ -32,7 +32,6 @@
   "dependencies": {
     "@cloud-cli/cli": "^1.9.0",
     "@cloud-cli/exec": "^1.0.4",
-    "@cloud-cli/store": "^1.5.1",
-    "get-port": "^6.1.2"
+    "get-port": "^7.1.0"
   }
 }

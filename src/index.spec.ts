@@ -1,23 +1,24 @@
-const execMocks = { exec: jest.fn() };
-const getPortMocks = jest.fn();
-
-jest.mock('@cloud-cli/exec', () => execMocks);
-jest.mock('get-port', () => getPortMocks);
-
-import * as exec from '@cloud-cli/exec';
+import { vi, expect, describe, it, beforeEach } from 'vitest';
 import dx from './index';
-import { Resource, SQLiteDriver } from '@cloud-cli/store';
-import { Container } from './store';
-import { init } from '@cloud-cli/cli';
+import { exec } from '@cloud-cli/exec';
+import { writeJson } from '@cloud-cli/cli';
 
-beforeEach(() => {
-  Resource.use(new SQLiteDriver(':memory:'));
-  execMocks.exec.mockReset();
-  Resource.create(Container);
+const execMocks = vi.hoisted(() => ({
+  exec: vi.fn(),
+  getConfig: vi.fn().mockImplementation(() => ({ dns: '1.2.3.4', dockerArgs: ['--net=bridge'] })),
+}));
 
-  getPortMocks.mockReturnValue(1234);
+vi.mock('get-port', () => ({ default: vi.fn().mockReturnValue(1234) }));
+vi.mock('@cloud-cli/exec', () => ({ exec: execMocks.exec }));
+vi.mock('@cloud-cli/cli', async (original) => {
+  const mod: any = await original();
+  return {
+    ...mod,
+    getConfig: execMocks.getConfig,
+  };
 });
 
+beforeEach(() => writeJson('./data/dx.json', {}));
 describe('docker images', () => {
   it('should pull an image', async () => {
     execMocks.exec.mockResolvedValueOnce({ ok: true });
@@ -29,6 +30,7 @@ describe('docker images', () => {
   });
 
   it('should throw an error if an image was not provided', async () => {
+    execMocks.exec.mockReset();
     execMocks.exec.mockResolvedValueOnce({ ok: true });
 
     const output = dx.pull({ image: '' });
@@ -50,23 +52,23 @@ describe('docker images', () => {
 describe('store', () => {
   it('should add/remove a container entry', async () => {
     const expected = {
-      id: 1,
       name: 'test',
       host: 'test.com',
       image: 'test:latest',
       volumes: '',
       port: '',
     };
-    await expect(dx.add({ name: '', image: '' })).rejects.toThrowError('Name required');
-    await expect(dx.add({ name: 'test', image: '' })).rejects.toThrowError('Image required');
-    await expect(dx.add({ name: 'test', image: 'test:latest', host: 'test.com' })).resolves.toEqual(expected);
-    await expect(dx.list({})).resolves.toEqual([expected]);
-    await expect(dx.get({ name: 'test' })).resolves.toEqual(expected);
 
-    await expect(dx.remove({ name: 'test' })).resolves.toBe(true);
-    await expect(dx.list({})).resolves.toEqual([]);
+    expect(() => dx.add({ name: '', image: '' })).toThrowError('Name required');
+    expect(() => dx.add({ name: 'test', image: '' })).toThrowError('Image required');
+    expect(dx.add({ name: 'test', image: 'test:latest', host: 'test.com' })).toEqual(expected);
+    expect(dx.list()).toEqual([expected]);
+    expect(dx.get({ name: 'test' })).toEqual(expected);
 
-    await expect(dx.remove({ name: 'test' })).rejects.toThrowError('Container not found: test');
+    expect(dx.remove({ name: 'test' })).toBe(true);
+    expect(dx.list()).toEqual([]);
+
+    expect(() => dx.remove({ name: 'test' })).toThrowError('Container not found: test');
   });
 
   it('should list container entries, sorted by name', async () => {
@@ -74,10 +76,10 @@ describe('store', () => {
     dx.add({ name: 'best', image: 'test:latest', host: 'best.com' });
     dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
 
-    await expect(dx.list({})).resolves.toEqual([
-      { id: 2, name: 'best', image: 'test:latest', host: 'best.com', volumes: '', port: '' },
-      { id: 3, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', port: '' },
-      { id: 1, name: 'zest', image: 'test:latest', host: 'zest.com', volumes: '', port: '' },
+    expect(dx.list()).toEqual([
+      { name: 'best', image: 'test:latest', host: 'best.com', volumes: '', port: '' },
+      { name: 'test', image: 'test:latest', host: 'test.com', volumes: '', port: '' },
+      { name: 'zest', image: 'test:latest', host: 'zest.com', volumes: '', port: '' },
     ]);
   });
 
@@ -86,46 +88,46 @@ describe('store', () => {
     dx.add({ name: 'best', image: 'best:latest', host: 'best.com' });
     dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
 
-    await expect(dx.list({ name: 'zest' })).resolves.toEqual([
-      { id: 1, name: 'zest', image: 'zest:latest', host: 'zest.com', volumes: '', port: '' },
+    expect(dx.list({ name: 'zest' })).toEqual([
+      { name: 'zest', image: 'zest:latest', host: 'zest.com', volumes: '', port: '' },
     ]);
 
-    await expect(dx.list({ image: 'test:latest' })).resolves.toEqual([
-      { id: 3, name: 'test', image: 'test:latest', host: 'test.com', volumes: '', port: '' },
+    expect(dx.list({ image: 'test:latest' })).toEqual([
+      { name: 'test', image: 'test:latest', host: 'test.com', volumes: '', port: '' },
     ]);
 
-    await expect(dx.list({ host: 'best.com' })).resolves.toEqual([
-      { id: 2, name: 'best', image: 'best:latest', host: 'best.com', volumes: '', port: '' },
+    expect(dx.list({ host: 'best.com' })).toEqual([
+      { name: 'best', image: 'best:latest', host: 'best.com', volumes: '', port: '' },
     ]);
   });
 
   it('should allow updates to container properties', async () => {
-    await expect(dx.add({ name: 'test', image: 'test:latest', host: 'old.com' })).resolves.toBeTruthy();
-    await expect(dx.update({ name: 'invalid' })).rejects.toThrowError('Container not found');
+    dx.add({ name: 'test', image: 'test:latest', host: 'old.com' });
+    expect(() => dx.update({ name: 'invalid' })).toThrowError('Container not found');
     const properties = {
       host: 'new.com',
       name: 'test',
-      port: '80:80, 8080:8000, invalid:123',
+      port: '8081',
       volumes: 'local:/tmp, disk:/opt, invalid:',
       image: 'other:latest',
     };
 
     const expected = {
-      id: 1,
       name: 'test',
       image: 'other:latest',
       volumes: 'local:/tmp,disk:/opt',
-      port: '80:80,8080:8000',
+      port: '8081',
       host: 'new.com',
     };
 
-    await expect(dx.update(properties)).resolves.toEqual(expected);
+    expect(dx.update(properties)).toEqual(expected);
   });
 });
 
 describe('running containers', () => {
   describe('ps', () => {
     it('should list running containers by name', async () => {
+      execMocks.exec.mockReset();
       execMocks.exec.mockResolvedValueOnce({
         ok: true,
         stdout: 'fancy-potato\naltruist-mango\n\n',
@@ -134,10 +136,11 @@ describe('running containers', () => {
       const output = dx.ps();
 
       await expect(output).resolves.toEqual(['altruist-mango', 'fancy-potato']);
-      expect(exec.exec).toHaveBeenCalledWith('docker', ['ps', '--format', '{{.Names}}']);
+      expect(exec).toHaveBeenCalledWith('docker', ['ps', '--format', '{{.Names}}']);
     });
 
     it('should handle errors', async () => {
+      execMocks.exec.mockReset();
       execMocks.exec.mockResolvedValueOnce({
         ok: false,
         stdout: '',
@@ -152,6 +155,7 @@ describe('running containers', () => {
 
   describe('logs', () => {
     it('should throw an error', async () => {
+      execMocks.exec.mockReset();
       const output = dx.logs({ name: '' });
 
       await expect(output).rejects.toEqual(new Error('Name not specified'));
@@ -162,7 +166,7 @@ describe('running containers', () => {
       execMocks.exec.mockResolvedValueOnce({
         ok: true,
         stdout: 'Running...',
-        stderr: 'Ops!'
+        stderr: 'Ops!',
       });
 
       const output = dx.logs({ name: 'test', lines: '100' });
@@ -174,12 +178,12 @@ describe('running containers', () => {
 
   describe('refresh', () => {
     it('should throw an error if name was not given', async () => {
-      const run = jest.fn(() => []);
+      const run = vi.fn(() => []);
       await expect(dx.refresh({ name: '' }, { run })).rejects.toThrowError(new Error('Name is required'));
     });
 
     it('should pull the latest of an image, stop and start a container', async () => {
-      const run = jest.fn();
+      const run = vi.fn();
       const name = 'update';
 
       await dx.add({
@@ -199,7 +203,7 @@ describe('running containers', () => {
 
   describe('restart', () => {
     it('should restart a container', async () => {
-      const run = jest.fn();
+      const run = vi.fn();
       const name = 'update';
 
       await dx.add({
@@ -215,7 +219,7 @@ describe('running containers', () => {
     });
 
     it('should restart a container using nameless args', async () => {
-      const run = jest.fn();
+      const run = vi.fn();
       const name = 'update';
 
       await dx.add({
@@ -230,7 +234,7 @@ describe('running containers', () => {
       expect(run).toHaveBeenCalledWith('dx.stop', { name });
       expect(run).toHaveBeenCalledWith('dx.start', { name });
     });
-  })
+  });
 
   describe('startAll', () => {
     it('should start all containers that are not yet running', async () => {
@@ -239,7 +243,7 @@ describe('running containers', () => {
       await dx.add({ name: 'another-container', image: 'test-image:latest' });
       execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: 'another-container' });
 
-      const run = jest.fn();
+      const run = vi.fn();
       await expect(dx.startAll({}, { run })).resolves.toBe(true);
 
       expect(run).toHaveBeenCalledWith('dx.pull', { image: 'test-image:latest' });
@@ -251,12 +255,12 @@ describe('running containers', () => {
 
   describe('start', () => {
     it('should throw an error if name was not given', async () => {
-      const run = jest.fn(() => []);
+      const run = vi.fn(() => []);
       await expect(dx.start({ name: '' }, { run })).rejects.toThrowError(new Error('Name is required'));
     });
 
     it('should run a container created previously', async () => {
-      dx[init]({ dns: '1.2.3.4' });
+      // dx[init]({ dns: '1.2.3.4' });
 
       const container = await dx.add({
         name: 'run-test',
@@ -270,7 +274,7 @@ describe('running containers', () => {
       expect(container.volumes).toEqual('local:/tmp,disk:/opt');
 
       execMocks.exec.mockResolvedValueOnce({ ok: true });
-      const run = jest.fn((cmd: string) => {
+      const run = vi.fn((cmd: string) => {
         switch (cmd) {
           case 'env.show':
             return [
@@ -287,9 +291,8 @@ describe('running containers', () => {
       expect(run).toHaveBeenCalledWith('env.show', { name: 'run-test' });
       expect(run).toHaveBeenCalledWith('px.update', { domain: 'run-test.com', target: 'http://localhost:1234' });
       expect(run).toHaveBeenCalledWith('dns.add', { domain: 'run-test.com' });
-      expect(run).toHaveBeenCalledWith('dns.reload', {});
 
-      expect(exec.exec).toHaveBeenCalledWith(
+      expect(exec).toHaveBeenCalledWith(
         'docker',
         [
           'run',
@@ -299,11 +302,10 @@ describe('running containers', () => {
           '--name',
           'run-test',
           '--dns=1.2.3.4',
+          '--net=bridge',
           '-vlocal:/tmp',
           '-vdisk:/opt',
-          '-p80:80',
-          '-p1234:1234',
-          '-p8080:8000',
+          '-p1234:8081',
           '-eFOO',
           '-eBAR',
           '-ePORT',
@@ -320,7 +322,7 @@ describe('running containers', () => {
       });
 
       execMocks.exec.mockResolvedValueOnce({ ok: false });
-      const run = jest.fn(() => [
+      const run = vi.fn(() => [
         { key: 'FOO', value: 'one' },
         { key: 'BAR', value: 'two' },
       ]);
@@ -332,7 +334,7 @@ describe('running containers', () => {
   describe('stop', () => {
     it('should stop a running container', async () => {
       const name = 'stop-test';
-      const run = jest.fn();
+      const run = vi.fn();
 
       await dx.add({
         name: 'stop-test',
@@ -343,29 +345,21 @@ describe('running containers', () => {
       await expect(dx.stop({ name }, { run })).resolves.toBe(true);
       await expect(dx.stop({ name: 'foo' }, { run })).resolves.toBe(true);
 
-      expect(exec.exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', name]);
-      expect(exec.exec).toHaveBeenCalledWith('docker', ['rm', name]);
+      expect(exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', name]);
+      expect(exec).toHaveBeenCalledWith('docker', ['rm', name]);
       expect(run).toHaveBeenCalledWith('dns.remove', { domain: 'run-test.com' });
 
-      expect(exec.exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', 'foo']);
-      expect(exec.exec).toHaveBeenCalledWith('docker', ['rm', 'foo']);
+      expect(exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', 'foo']);
+      expect(exec).toHaveBeenCalledWith('docker', ['rm', 'foo']);
     });
 
     it('should throw an error if name is empty', async () => {
       const name = '';
-      const run = jest.fn();
+      const run = vi.fn();
+      execMocks.exec.mockReset();
       await expect(dx.stop({ name }, { run })).rejects.toThrowError('Name is required');
 
-      expect(exec.exec).not.toHaveBeenCalled();
+      expect(exec).not.toHaveBeenCalled();
     });
-  });
-});
-
-describe('initialisation', () => {
-  it('should create resources on init', () => {
-    const spy = jest.spyOn(Resource, 'create');
-    dx[init]();
-
-    expect(spy).toHaveBeenCalledWith(Container);
   });
 });

@@ -16,7 +16,7 @@ export async function getEnvVars(vars: EnvList) {
 }
 
 export function getListFromString(string: string): string[] {
-  return string.trim().split('\n').filter(Boolean);
+  return String(string).trim().split('\n').filter(Boolean);
 }
 
 export function addExecFlag(string: string, flag: string) {
