@@ -2,7 +2,7 @@ import { exec } from '@cloud-cli/exec';
 import { ServerParams, getConfig } from '@cloud-cli/cli';
 import { findContainer, listContainers } from './store.js';
 import { EnvList, addExecFlag, getEnvVars, getListFromString, readTargetName } from './utils.js';
-import { Config, ExtraOptions } from './types.js';
+import { Config, ContainerName, GetLogsOptions } from './types.js';
 
 export async function getRunningContainers(): Promise<string[]> {
   const ps = await exec('docker', ['ps', '--format', '{{.Names}}']);
@@ -12,15 +12,6 @@ export async function getRunningContainers(): Promise<string[]> {
   }
 
   return getListFromString(ps.stdout).sort();
-}
-
-interface GetLogsOptions extends ExtraOptions {
-  name: string;
-  lines?: string;
-}
-
-interface ContainerName extends ExtraOptions {
-  name: string;
 }
 
 export async function getLogs(options: GetLogsOptions): Promise<string> {
