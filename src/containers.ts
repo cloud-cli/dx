@@ -2,7 +2,7 @@ import { exec } from '@cloud-cli/exec';
 import { ServerParams, getConfig } from '@cloud-cli/cli';
 import { findContainer, listContainers } from './store.js';
 import { EnvList, addExecFlag, getEnvVars, getListFromString, readTargetName } from './utils.js';
-import { Config, ContainerName, GetLogsOptions } from './types.js';
+import { Config, ContainerName, GetLogsOptions, NameAndStatus } from './types.js';
 
 export async function getRunningContainers(): Promise<string[]> {
   const ps = await exec('docker', ['ps', '--format', '{{.Names}}']);
@@ -11,7 +11,18 @@ export async function getRunningContainers(): Promise<string[]> {
     throw new Error('Failed to list containers: ' + ps.stderr);
   }
 
-  return getListFromString(ps.stdout).sort();
+  const list = getListFromString(ps.stdout).sort();
+
+  return list;
+}
+
+export async function getAllContainers(): Promise<NameAndStatus[]> {
+  const running = await getRunningContainers();
+
+  return listContainers().map((c) => ({
+    name: c.name,
+    status: running.includes(c.name) ? 'running' : 'stopped',
+  }));
 }
 
 export async function getLogs(options: GetLogsOptions): Promise<string> {
@@ -34,9 +45,8 @@ export async function getLogs(options: GetLogsOptions): Promise<string> {
 }
 
 export async function startAll(_: any, cli: any) {
-  const list = await listContainers({});
-  const running = await getRunningContainers();
-
+  const list = listContainers();
+  const running = (await getRunningContainers()) as string[];
   const notRunning = list.filter(({ name }) => !running.includes(name));
 
   for (const app of notRunning) {

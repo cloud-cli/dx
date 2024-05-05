@@ -1,7 +1,7 @@
 import { vi, expect, describe, it, beforeEach } from 'vitest';
 import dx from './index';
 import { exec } from '@cloud-cli/exec';
-import { writeJson } from '@cloud-cli/cli';
+import { getStorage } from '@cloud-cli/cli';
 
 const execMocks = vi.hoisted(() => ({
   exec: vi.fn(),
@@ -18,7 +18,8 @@ vi.mock('@cloud-cli/cli', async (original) => {
   };
 });
 
-beforeEach(() => writeJson('./data/dx.json', {}));
+beforeEach(() => void getStorage('dx').reset());
+
 describe('docker images', () => {
   it('should pull an image', async () => {
     execMocks.exec.mockResolvedValueOnce({ ok: true });
@@ -137,6 +138,28 @@ describe('running containers', () => {
 
       await expect(output).resolves.toEqual(['altruist-mango', 'fancy-potato']);
       expect(exec).toHaveBeenCalledWith('docker', ['ps', '--format', '{{.Names}}']);
+    });
+
+    it('should list all containers names and their status', async () => {
+      expect(dx.list()).toEqual([]);
+
+      dx.add({ name: 'fancy-potato', image: 'test:latest', host: 'test.com' });
+      dx.add({ name: 'altruist-mango', image: 'test:latest', host: 'best.com' });
+
+      expect(dx.list().length).toBe(2);
+
+      execMocks.exec.mockReset();
+      execMocks.exec.mockResolvedValueOnce({
+        ok: true,
+        stdout: 'altruist-mango',
+      });
+
+      const output = dx.ps({ status: true });
+
+      await expect(output).resolves.toEqual([
+        { name: 'altruist-mango', status: 'running' },
+        { name: 'fancy-potato', status: 'stopped' },
+      ]);
     });
 
     it('should handle errors', async () => {

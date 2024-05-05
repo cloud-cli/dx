@@ -1,4 +1,3 @@
-
 export interface Config {
   dns?: string;
   dockerArgs?: string[];
@@ -10,6 +9,11 @@ export interface Container {
   host: string;
   port: string;
   volumes: string;
+}
+
+export interface NameAndStatus {
+  name: string;
+  status: string;
 }
 
 export interface ExtraOptions {
