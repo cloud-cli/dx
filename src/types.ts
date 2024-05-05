@@ -6,7 +6,7 @@ export interface Config {
 export interface Container {
   name: string;
   image: string;
-  host: string;
+  domain: string;
   port: string;
   volumes: string;
 }

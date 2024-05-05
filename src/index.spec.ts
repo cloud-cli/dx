@@ -54,7 +54,7 @@ describe('store', () => {
   it('should add/remove a container entry', async () => {
     const expected = {
       name: 'test',
-      host: 'test.com',
+      domain: 'test.com',
       image: 'test:latest',
       volumes: '',
       port: '',
@@ -62,7 +62,7 @@ describe('store', () => {
 
     expect(() => dx.add({ name: '', image: '' })).toThrowError('Name required');
     expect(() => dx.add({ name: 'test', image: '' })).toThrowError('Image required');
-    expect(dx.add({ name: 'test', image: 'test:latest', host: 'test.com' })).toEqual(expected);
+    expect(dx.add({ name: 'test', image: 'test:latest', domain: 'test.com' })).toEqual(expected);
     expect(dx.list()).toEqual([expected]);
     expect(dx.get({ name: 'test' })).toEqual(expected);
 
@@ -73,40 +73,40 @@ describe('store', () => {
   });
 
   it('should list container entries, sorted by name', async () => {
-    dx.add({ name: 'zest', image: 'test:latest', host: 'zest.com' });
-    dx.add({ name: 'best', image: 'test:latest', host: 'best.com' });
-    dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
+    dx.add({ name: 'zest', image: 'test:latest', domain: 'zest.com' });
+    dx.add({ name: 'best', image: 'test:latest', domain: 'best.com' });
+    dx.add({ name: 'test', image: 'test:latest', domain: 'test.com' });
 
     expect(dx.list()).toEqual([
-      { name: 'best', image: 'test:latest', host: 'best.com', volumes: '', port: '' },
-      { name: 'test', image: 'test:latest', host: 'test.com', volumes: '', port: '' },
-      { name: 'zest', image: 'test:latest', host: 'zest.com', volumes: '', port: '' },
+      { name: 'best', image: 'test:latest', domain: 'best.com', volumes: '', port: '' },
+      { name: 'test', image: 'test:latest', domain: 'test.com', volumes: '', port: '' },
+      { name: 'zest', image: 'test:latest', domain: 'zest.com', volumes: '', port: '' },
     ]);
   });
 
-  it('should list container filtered by name, image or host', async () => {
-    dx.add({ name: 'zest', image: 'zest:latest', host: 'zest.com' });
-    dx.add({ name: 'best', image: 'best:latest', host: 'best.com' });
-    dx.add({ name: 'test', image: 'test:latest', host: 'test.com' });
+  it('should list container filtered by name, image or domain', async () => {
+    dx.add({ name: 'zest', image: 'zest:latest', domain: 'zest.com' });
+    dx.add({ name: 'best', image: 'best:latest', domain: 'best.com' });
+    dx.add({ name: 'test', image: 'test:latest', domain: 'test.com' });
 
     expect(dx.list({ name: 'zest' })).toEqual([
-      { name: 'zest', image: 'zest:latest', host: 'zest.com', volumes: '', port: '' },
+      { name: 'zest', image: 'zest:latest', domain: 'zest.com', volumes: '', port: '' },
     ]);
 
     expect(dx.list({ image: 'test:latest' })).toEqual([
-      { name: 'test', image: 'test:latest', host: 'test.com', volumes: '', port: '' },
+      { name: 'test', image: 'test:latest', domain: 'test.com', volumes: '', port: '' },
     ]);
 
-    expect(dx.list({ host: 'best.com' })).toEqual([
-      { name: 'best', image: 'best:latest', host: 'best.com', volumes: '', port: '' },
+    expect(dx.list({ domain: 'best.com' })).toEqual([
+      { name: 'best', image: 'best:latest', domain: 'best.com', volumes: '', port: '' },
     ]);
   });
 
   it('should allow updates to container properties', async () => {
-    dx.add({ name: 'test', image: 'test:latest', host: 'old.com' });
+    dx.add({ name: 'test', image: 'test:latest', domain: 'old.com' });
     expect(() => dx.update({ name: 'invalid' })).toThrowError('Container not found');
     const properties = {
-      host: 'new.com',
+      domain: 'new.com',
       name: 'test',
       port: '8081',
       volumes: 'local:/tmp, disk:/opt, invalid:',
@@ -118,7 +118,7 @@ describe('store', () => {
       image: 'other:latest',
       volumes: 'local:/tmp,disk:/opt',
       port: '8081',
-      host: 'new.com',
+      domain: 'new.com',
     };
 
     expect(dx.update(properties)).toEqual(expected);
@@ -143,8 +143,8 @@ describe('running containers', () => {
     it('should list all containers names and their status', async () => {
       expect(dx.list()).toEqual([]);
 
-      dx.add({ name: 'fancy-potato', image: 'test:latest', host: 'test.com' });
-      dx.add({ name: 'altruist-mango', image: 'test:latest', host: 'best.com' });
+      dx.add({ name: 'fancy-potato', image: 'test:latest', domain: 'test.com' });
+      dx.add({ name: 'altruist-mango', image: 'test:latest', domain: 'best.com' });
 
       expect(dx.list().length).toBe(2);
 
@@ -212,7 +212,7 @@ describe('running containers', () => {
       await dx.add({
         name,
         image: 'test-image:latest',
-        host: 'run-test.com',
+        domain: 'run-test.com',
       });
 
       await expect(dx.refresh({ name }, { run })).resolves.toEqual(undefined);
@@ -232,7 +232,7 @@ describe('running containers', () => {
       await dx.add({
         name,
         image: 'test-image:latest',
-        host: 'run-test.com',
+        domain: 'run-test.com',
       });
 
       await expect(dx.restart({ name }, { run })).resolves.toEqual(true);
@@ -249,7 +249,7 @@ describe('running containers', () => {
         _: [name],
         name: '',
         image: 'test-image:latest',
-        host: 'run-test.com',
+        domain: 'run-test.com',
       });
 
       await expect(dx.restart({ _: [name], name: '' }, { run })).resolves.toEqual(true);
@@ -283,12 +283,10 @@ describe('running containers', () => {
     });
 
     it('should run a container created previously', async () => {
-      // dx[init]({ dns: '1.2.3.4' });
-
-      const container = await dx.add({
+      const container = dx.add({
         name: 'run-test',
         image: 'test-image:latest',
-        host: 'run-test.com',
+        domain: 'run-test.com',
         port: '8081',
         volumes: 'local:/tmp, disk:/opt, invalid:',
       });
@@ -296,6 +294,7 @@ describe('running containers', () => {
       expect(container.port).toEqual('8081');
       expect(container.volumes).toEqual('local:/tmp,disk:/opt');
 
+      execMocks.exec.mockReset();
       execMocks.exec.mockResolvedValueOnce({ ok: true });
       const run = vi.fn((cmd: string) => {
         switch (cmd) {
@@ -339,7 +338,7 @@ describe('running containers', () => {
     });
 
     it('should throw an error if container failed', async () => {
-      await dx.add({
+      dx.add({
         name: 'run-test',
         image: 'test-image:latest',
       });
@@ -359,10 +358,10 @@ describe('running containers', () => {
       const name = 'stop-test';
       const run = vi.fn();
 
-      await dx.add({
+      dx.add({
         name: 'stop-test',
         image: 'test-image:latest',
-        host: 'run-test.com',
+        domain: 'run-test.com',
       });
 
       await expect(dx.stop({ name }, { run })).resolves.toBe(true);

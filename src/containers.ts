@@ -94,12 +94,12 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
   const vars = (await run('env.show', { name })) as EnvList;
   const { env, envKeys } = await getEnvVars(vars);
 
-  const container = await findContainer(name);
+  const container = findContainer(name);
   const volumes = addExecFlag(container.volumes, 'v');
   const ports = ['-p' + env.PORT + ':' + (container.port || env.PORT)];
 
-  if (container.host) {
-    const domain = container.host;
+  if (container.domain) {
+    const [domain] = container.domain.split('/');
 
     await run('px.update', { domain, target: 'http://localhost:' + env.PORT });
     await run('dns.add', { domain });
@@ -151,10 +151,10 @@ export async function stopContainer(options: ContainerName, { run }: ServerParam
   await exec('docker', ['stop', '-t', '5', name]);
   await exec('docker', ['rm', name]);
 
-  const containers = [await findContainer(name)].filter(Boolean);
+  const containers = [findContainer(name)].filter(Boolean);
 
   for (const container of containers) {
-    await run('dns.remove', { domain: container.host });
+    await run('dns.remove', { domain: container.domain });
   }
 
   return true;

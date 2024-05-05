@@ -10,7 +10,7 @@ interface ContainerName extends ExtraOptions {
 
 interface ContainerUpdateOptions extends ContainerName {
   image: string;
-  host?: string;
+  domain?: string;
   volumes?: string;
   port?: string;
 }
@@ -26,8 +26,8 @@ export function addContainer(options: ContainerUpdateOptions): Container {
 
   const volumes = options.volumes ? sanitiseVolumes(options.volumes) : '';
   const port = options.port || '';
-  const host = options.host;
-  const container: Container = { name, image, volumes, port, host };
+  const domain = options.domain || '';
+  const container: Container = { name, image, volumes, port, domain };
 
   set(name, container);
 
@@ -54,7 +54,7 @@ const optionSplitter = /,\s*/;
 
 export function updateContainer(options: Partial<ContainerUpdateOptions>) {
   readTargetName(options);
-  let { port, volumes, name, image, host } = options;
+  let { port, volumes, name, image, domain } = options;
   const container = get(name);
 
   if (!container) {
@@ -73,8 +73,8 @@ export function updateContainer(options: Partial<ContainerUpdateOptions>) {
     container.image = image;
   }
 
-  if (host) {
-    container.host = host;
+  if (domain) {
+    container.domain = domain;
   }
 
   set(container.name, container);
@@ -82,7 +82,7 @@ export function updateContainer(options: Partial<ContainerUpdateOptions>) {
 }
 
 export function listContainers(options: ContainerListOptions = {}) {
-  const keys: Array<keyof Container> = ['name', 'image', 'host', 'port', 'volumes'];
+  const keys: Array<keyof Container> = ['name', 'image', 'domain', 'port', 'volumes'];
   const list = getAll();
 
   const filtered = keys.reduce((list, key) => {
@@ -95,6 +95,7 @@ export function listContainers(options: ContainerListOptions = {}) {
 
   return filtered.sort((a, b) => Number(a.name > b.name) || -1);
 }
+
 
 export function findContainer(name: string) {
   return get(name);
