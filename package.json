@@ -30,8 +30,10 @@
     "access": "public"
   },
   "dependencies": {
-    "@cloud-cli/cli": "^1.9.0",
     "@cloud-cli/exec": "^1.0.4",
     "get-port": "^7.1.0"
+  },
+  "peerDependencies": {
+    "@cloud-cli/cli": "^2.0.0"
   }
 }
