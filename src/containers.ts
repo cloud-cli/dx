@@ -3,6 +3,7 @@ import { ServerParams, getConfig } from '@cloud-cli/cli';
 import { findContainer, listContainers } from './store.js';
 import { EnvList, addExecFlag, getEnvVars, getListFromString, readTargetName } from './utils.js';
 import { Config, ContainerName, GetLogsOptions, NameAndStatus } from './types.js';
+import getPort from 'get-port';
 
 export async function getRunningContainers(): Promise<string[]> {
   const ps = await exec('docker', ['ps', '--format', '{{.Names}}']);
@@ -91,12 +92,19 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
     throw new Error('Name is required');
   }
 
-  const vars = (await run('env.show', { name })) as EnvList;
-  const { env, envKeys } = await getEnvVars(vars);
-
   const container = findContainer(name);
-  const volumes = addExecFlag(container.volumes, 'v');
-  const ports = ['-p' + env.PORT + ':' + (container.port || env.PORT)];
+
+  if (!container) {
+    throw new Error('Container not found: ' + name);
+  }
+
+  const vars = (await run('env.show', { name })) as EnvList;
+  const port = String(container.port || (await getPort()));
+  vars.push({ key: 'PORT', value: port });
+
+  const { env, envKeys } = await getEnvVars(vars);
+  const volumes = addExecFlag(container.volumes.split(','), 'v');
+  const ports = addExecFlag([`${port}:${port}`], 'p');
 
   if (container.domain) {
     const [domain] = container.domain.split('/');
@@ -126,7 +134,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
     ...extraArgs,
     ...volumes,
     ...ports,
-    ...envKeys.map((e) => '-e' + e),
+    ...addExecFlag(envKeys, 'e'),
     container.image,
   ];
 

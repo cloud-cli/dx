@@ -1,13 +1,10 @@
-import getPort from 'get-port';
-
 export type EnvList = Array<{ key: string; value: string }>;
 
 export async function getEnvVars(vars: EnvList) {
-  const port = await getPort();
   const envKeys: string[] = [];
   const env = { ...process.env };
 
-  vars.concat({ key: 'PORT', value: String(port) }).forEach(({ key, value }) => {
+  vars.forEach(({ key, value }) => {
     envKeys.push(key);
     env[key] = String(value);
   });
@@ -19,9 +16,8 @@ export function getListFromString(string: string): string[] {
   return String(string).trim().split('\n').filter(Boolean);
 }
 
-export function addExecFlag(string: string, flag: string) {
-  return string
-    .split(',')
+export function addExecFlag(list: string[], flag: string) {
+  return list
     .filter(Boolean)
     .map((p) => `-${flag}${p}`);
 }

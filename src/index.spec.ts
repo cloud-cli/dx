@@ -287,11 +287,11 @@ describe('running containers', () => {
         name: 'run-test',
         image: 'test-image:latest',
         domain: 'run-test.com',
-        port: '8081',
+        port: '',
         volumes: 'local:/tmp, disk:/opt, invalid:',
       });
 
-      expect(container.port).toEqual('8081');
+      expect(container.port).toEqual('');
       expect(container.volumes).toEqual('local:/tmp,disk:/opt');
 
       execMocks.exec.mockReset();
@@ -327,13 +327,64 @@ describe('running containers', () => {
           '--net=bridge',
           '-vlocal:/tmp',
           '-vdisk:/opt',
-          '-p1234:8081',
+          '-p1234:1234',
           '-eFOO',
           '-eBAR',
           '-ePORT',
           'test-image:latest',
         ],
         { env: { ...process.env, PORT: '1234', FOO: 'one', BAR: 'two' } },
+      );
+    });
+
+    it('should run a container with a fixed port', async () => {
+      const container = dx.add({
+        name: 'port-run-test',
+        image: 'port-image:latest',
+        domain: '',
+        port: '8081',
+      });
+
+      expect(container.port).toEqual('8081');
+
+      execMocks.exec.mockReset();
+      execMocks.exec.mockResolvedValueOnce({ ok: true });
+      const run = vi.fn((cmd: string) => {
+        switch (cmd) {
+          case 'env.show':
+            return [];
+          default:
+            return true;
+        }
+      });
+
+      await expect(dx.start({ name: 'port-run-test' }, { run })).resolves.toEqual(true);
+
+      expect(run).toHaveBeenCalledWith('env.show', { name: 'port-run-test' });
+
+      expect(exec).toHaveBeenCalledWith(
+        'docker',
+        [
+          'run',
+          '--detach',
+          '--restart',
+          'always',
+          '--name',
+          'port-run-test',
+          '--dns=1.2.3.4',
+          '--net=bridge',
+          '-p8081:8081',
+          '-ePORT',
+          'port-image:latest',
+        ],
+        { env: { ...process.env, PORT: '8081' } },
+      );
+    });
+
+    it('should throw an error if container does not exists', async () => {
+      const run = vi.fn();
+      await expect(dx.start({ name: 'not-found' }, { run })).rejects.toThrow(
+        new Error('Container not found: not-found'),
       );
     });
 
