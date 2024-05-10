@@ -400,7 +400,7 @@ describe('running containers', () => {
         { key: 'BAR', value: 'two' },
       ]);
 
-      await expect(dx.start({ name: 'run-test' }, { run })).rejects.toThrowError('Failed to start run-test');
+      await expect(dx.start({ name: 'run-test' }, { run })).rejects.toThrowError('Failed to start container run-test');
     });
   });
 
