@@ -1,5 +1,5 @@
 import { exec } from '@cloud-cli/exec';
-import { ServerParams, getConfig } from '@cloud-cli/cli';
+import { ServerParams, getConfig, logInfo, logError } from '@cloud-cli/cli';
 import { findContainer, listContainers } from './store.js';
 import { EnvList, addExecFlag, getEnvVars, getListFromString, readTargetName } from './utils.js';
 import { Config, ContainerName, GetLogsOptions, NameAndStatus } from './types.js';
@@ -141,9 +141,13 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
   const output = await exec('docker', execArgs.filter(Boolean), { env });
 
   if (!output.ok) {
+    const e = 'Failed to start container ' + name;
     console.log([output.stdout, output.stderr].join('\n\n'));
-    throw new Error('Failed to start ' + name);
+    logError(e);
+    throw new Error(e);
   }
+
+  logInfo('Started container ' + name);
 
   return true;
 }
@@ -159,11 +163,13 @@ export async function stopContainer(options: ContainerName, { run }: ServerParam
   await exec('docker', ['stop', '-t', '5', name]);
   await exec('docker', ['rm', name]);
 
-  const containers = [findContainer(name)].filter(Boolean);
+  const containers = [findContainer(name)].filter(c => c && c.domain);
 
   for (const container of containers) {
     await run('dns.remove', { domain: container.domain });
   }
+
+  logInfo('Stopped container ' + name);
 
   return true;
 }
