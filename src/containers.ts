@@ -2,7 +2,7 @@ import { exec } from '@cloud-cli/exec';
 import { ServerParams, getConfig, logInfo, logError } from '@cloud-cli/cli';
 import { findContainer, listContainers } from './store.js';
 import { EnvList, addExecFlag, getEnvVars, getListFromString, readTargetName } from './utils.js';
-import { Config, ContainerName, GetLogsOptions, NameAndStatus } from './types.js';
+import { Config, Container, ContainerName, GetLogsOptions, NameAndStatus } from './types.js';
 import getPort from 'get-port';
 
 export async function getRunningContainers(): Promise<string[]> {
@@ -84,6 +84,21 @@ export async function restartContainer(options: ContainerName, { run }: ServerPa
   return true;
 }
 
+async function getPorts(container: Container): Promise<[number, number]> {
+  if (!container.port) {
+    const port = await getPort();
+    return [port, port];
+  }
+
+  if (container.port.startsWith(':')) {
+    const port = await getPort();
+    return [port, Number(container.port.slice(1))];
+  }
+
+  const port = Number(container.port);
+  return [port, port];
+}
+
 export async function startContainer(options: ContainerName, { run }: ServerParams) {
   readTargetName(options);
   const { name } = options;
@@ -92,19 +107,20 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
     throw new Error('Name is required');
   }
 
-  const container = findContainer(name);
+  const container: Container | null = findContainer(name);
 
   if (!container) {
     throw new Error('Container not found: ' + name);
   }
 
   const vars = (await run('env.show', { name })) as EnvList;
-  const port = String(container.port || (await getPort()));
-  vars.push({ key: 'PORT', value: port });
+  const ports = await getPorts(container);
+  vars.push({ key: 'PORT', value: String(ports[1]) });
+
 
   const { env, envKeys } = await getEnvVars(vars);
   const volumes = addExecFlag(container.volumes.split(','), 'v');
-  const ports = addExecFlag([`${port}:${port}`], 'p');
+  const portBindings = addExecFlag([ports.join(':')], 'p');
 
   if (container.domain) {
     const [domain] = container.domain.split('/');
@@ -133,7 +149,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
     name,
     ...extraArgs,
     ...volumes,
-    ...ports,
+    ...portBindings,
     ...addExecFlag(envKeys, 'e'),
     container.image,
   ];

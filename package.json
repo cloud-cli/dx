@@ -10,9 +10,7 @@
     "test": "vitest",
     "build": "rm -rf ./dist/* && tsc"
   },
-  "keywords": [
-    "cloudy"
-  ],
+  "keywords": ["cloudy"],
   "license": "MIT",
   "author": "Darlan Alves <me@darlanalv.es>",
   "devDependencies": {
@@ -35,6 +33,9 @@
     "get-port": "^7.1.0"
   },
   "peerDependencies": {
-    "@cloud-cli/cli": "^2.0.0"
+    "@cloud-cli/cli": "^2.0.0",
+    "@cloud-cli/env": "^1.0.0",
+    "@cloud-cli/dns": "^2.0.0",
+    "@cloud-cli/px": "^4.0.0"
   }
 }
