@@ -117,7 +117,6 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
   const ports = await getPorts(container);
   vars.push({ key: 'PORT', value: String(ports[1]) });
 
-
   const { env, envKeys } = await getEnvVars(vars);
   const volumes = addExecFlag(container.volumes.split(','), 'v');
   const portBindings = addExecFlag([ports.join(':')], 'p');
@@ -125,7 +124,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
   if (container.domain) {
     const [domain] = container.domain.split('/');
 
-    await run('px.update', { domain, target: 'http://localhost:' + env.PORT });
+    await run('px.update', { domain, target: 'http://localhost:' + ports[0] });
     await run('dns.add', { domain });
   }
 
