@@ -311,8 +311,8 @@ describe('running containers', () => {
       await expect(dx.start({ name: 'run-test' }, { run })).resolves.toEqual(true);
 
       expect(run).toHaveBeenCalledWith('env.show', { name: 'run-test' });
-      expect(run).toHaveBeenCalledWith('px.update', { domain: 'run-test.com', target: 'http://localhost:1234' });
       expect(run).toHaveBeenCalledWith('dns.add', { domain: 'run-test.com' });
+      expect(run).toHaveBeenCalledWith('px.reload');
 
       expect(exec).toHaveBeenCalledWith(
         'docker',
@@ -323,6 +323,10 @@ describe('running containers', () => {
           'always',
           '--name',
           'run-test',
+          '--label',
+          'px:host=run-test.com',
+          '--label',
+          'px:path=',
           '--dns=1.2.3.4',
           '--net=bridge',
           '-vlocal:/tmp',

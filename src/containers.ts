@@ -124,7 +124,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
   const config = await getConfig<Config>('dx');
 
   if (container.domain) {
-    const [domain, path] = container.domain.split("/");
+    const [domain, path = ''] = container.domain.split("/");
     await run("dns.add", { domain });
 
     extraArgs.push(
