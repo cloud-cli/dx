@@ -87,7 +87,7 @@ describe('store', () => {
     };
 
     expect(() => dx.rename({ name: '', newName: '' })).toThrowError('Name and new name required');
-    expect(dx.rename({ name: 'test', newName: '' })).toThrowError('Name and new name required');
+    expect(() => dx.rename({ name: 'test', newName: '' })).toThrowError('Name and new name required');
     expect(dx.add({ name: 'test', image: 'test:latest' })).toEqual(original);
     expect(dx.rename({ name: 'test', newName: 'test2' })).toEqual(renamed);
     expect(dx.list()).toEqual([renamed]);
