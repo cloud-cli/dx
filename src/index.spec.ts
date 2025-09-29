@@ -72,6 +72,28 @@ describe('store', () => {
     expect(() => dx.remove({ name: 'test' })).toThrowError('Container not found: test');
   });
 
+  it('should rename an entry', () => {
+    const original = {
+      name: 'test',
+      image: 'test:latest',
+      domain: '',
+      volumes: '',
+      port: '',
+    };
+
+    const renamed = {
+      ...original,
+      name: 'test2',
+    };
+
+    expect(() => dx.rename({ name: '', newName: '' })).toThrowError('Name and new name required');
+    expect(dx.rename({ name: 'test', newName: '' })).toThrowError('Name and new name required');
+    expect(dx.add({ name: 'test', image: 'test:latest' })).toEqual(original);
+    expect(dx.rename({ name: 'test', newName: 'test2' })).toEqual(renamed);
+    expect(dx.list()).toEqual([renamed]);
+    expect(dx.get({ name: 'test2' })).toEqual(renamed);
+  });
+
   it('should list container entries, sorted by name', async () => {
     dx.add({ name: 'zest', image: 'test:latest', domain: 'zest.com' });
     dx.add({ name: 'best', image: 'test:latest', domain: 'best.com' });

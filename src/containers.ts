@@ -1,8 +1,8 @@
 import { exec } from '@cloud-cli/exec';
 import { ServerParams, getConfig, logInfo, logError } from '@cloud-cli/cli';
-import { findContainer, listContainers } from './store.js';
-import { EnvList, addExecFlag, getEnvVars, getListFromString, readTargetName } from './utils.js';
-import { Config, Container, ContainerName, GetLogsOptions, NameAndStatus } from './types.js';
+import { findContainer, listContainers, rename } from './store.js';
+import { EnvList, addExecFlag, getEnvVars, getListFromString, readTargetName, readTargetNewName } from './utils.js';
+import { Config, Container, ContainerName, GetLogsOptions, NameAndStatus, RenameOptions } from './types.js';
 import getPort from 'get-port';
 
 export async function getRunningContainers(): Promise<string[]> {
@@ -44,6 +44,26 @@ export async function getLogs(options: GetLogsOptions): Promise<string> {
 
   return [sh.stdout, sh.stderr].join('\n\n').trim();
 }
+
+export function renameContainer(options: RenameOptions) {
+  readTargetName(options);
+  readTargetNewName(options);
+
+  const { name, newName } = options;
+
+  if (!name || !newName) {
+    throw new Error('Name and new name required');
+  }
+
+  const container: Container | null = findContainer(name);
+
+  if (!container) {
+    throw new Error('Container not found: ' + name);
+  }
+
+  rename(name, newName);
+}
+
 
 export async function startAll(_: any, cli: any) {
   const list = listContainers();

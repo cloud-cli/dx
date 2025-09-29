@@ -28,3 +28,8 @@ export interface GetLogsOptions extends ExtraOptions {
 export interface ContainerName extends ExtraOptions {
   name: string;
 }
+
+export interface RenameOptions extends ExtraOptions {
+  name: string;
+  newName: string;
+}

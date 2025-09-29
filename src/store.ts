@@ -81,6 +81,12 @@ export function updateContainer(options: Partial<ContainerUpdateOptions>) {
   return container;
 }
 
+export function rename(name: string, newName: string) {
+  const container = get(name);
+  set(newName, container);
+  remove(name);
+}
+
 export function listContainers(options: ContainerListOptions = {}) {
   const keys: Array<keyof Container> = ['name', 'image', 'domain', 'port', 'volumes'];
   const list = getAll();

@@ -1,7 +1,23 @@
-import { getAllContainers, getLogs, getRunningContainers, refreshContainer, restartContainer, startAll, startContainer, stopContainer } from './containers.js';
-import { prune, pull } from './images.js';
-import { addContainer, getContainer, listContainers, removeContainer, updateContainer } from './store.js';
-export type { Config } from './types.js';
+import {
+  getAllContainers,
+  getLogs,
+  getRunningContainers,
+  refreshContainer,
+  restartContainer,
+  startAll,
+  startContainer,
+  stopContainer,
+  renameContainer,
+} from "./containers.js";
+import { prune, pull } from "./images.js";
+import {
+  addContainer,
+  getContainer,
+  listContainers,
+  removeContainer,
+  updateContainer,
+} from "./store.js";
+export type { Config } from "./types.js";
 
 function ps(options: { status?: boolean } = {}) {
   if (options.status) {
@@ -16,6 +32,7 @@ export default {
   prune,
   add: addContainer,
   remove: removeContainer,
+  rename: renameContainer,
   get: getContainer,
   list: listContainers,
   refresh: refreshContainer,
@@ -26,4 +43,4 @@ export default {
   restart: restartContainer,
   ps: ps,
   logs: getLogs,
-}
+};

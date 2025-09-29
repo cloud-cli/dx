@@ -26,6 +26,10 @@ export function readTargetName(args) {
   readPositionalArgs(args, 'name');
 }
 
+export function readTargetNewName(args) {
+  readPositionalArgs(args, 'newName');
+}
+
 export function readTargetImage(args) {
   readPositionalArgs(args, 'image');
 }
