@@ -61,7 +61,7 @@ export function renameContainer(options: RenameOptions) {
     throw new Error('Container not found: ' + name);
   }
 
-  rename(name, newName);
+  return rename(name, newName);
 }
 
 

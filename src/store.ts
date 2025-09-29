@@ -83,8 +83,10 @@ export function updateContainer(options: Partial<ContainerUpdateOptions>) {
 
 export function rename(name: string, newName: string) {
   const container = get(name);
+  container.name = newName;
   set(newName, container);
   remove(name);
+  return container;
 }
 
 export function listContainers(options: ContainerListOptions = {}) {
