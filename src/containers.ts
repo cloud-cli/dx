@@ -120,8 +120,7 @@ async function getPorts(container: Container): Promise<[number, number]> {
 }
 
 export interface StartOptions {
-  daemon?: boolean;
-  restart?: boolean;
+  worker?: boolean;
   startArgs?: string;
 }
 
@@ -149,7 +148,7 @@ export async function startContainer(options: ContainerName & StartOptions, { ru
   const extraArgs = [];
   const config = await getConfig<Config>('dx');
 
-  if (container.domain && !options.daemon) {
+  if (container.domain && !options.worker) {
     const [domain, path = ''] = container.domain.split("/");
     await run("dns.add", { domain });
 
@@ -172,7 +171,7 @@ export async function startContainer(options: ContainerName & StartOptions, { ru
   const execArgs = [
     'run',
     '--detach',
-    ...(options.restart !== false ? ['--restart', 'always'] : []),
+    ...(!options.worker ? ['--restart', 'always'] : []),
     '--name',
     name,
     ...extraArgs,

@@ -13,6 +13,8 @@ interface ContainerUpdateOptions extends ContainerName {
   domain?: string;
   volumes?: string;
   port?: string;
+  worker?: boolean;
+  startArgs?: string;
 }
 
 type ContainerListOptions = Partial<Container>;
@@ -25,9 +27,8 @@ export function addContainer(options: ContainerUpdateOptions): Container {
   if (!image) throw new Error('Image required');
 
   const volumes = options.volumes ? sanitiseVolumes(options.volumes) : '';
-  const port = options.port || '';
-  const domain = options.domain || '';
-  const container: Container = { name, image, volumes, port, domain };
+  const { port = '', domain = '', worker = false, startArgs = '' } = options;
+  const container: Container = { name, image, volumes, port, domain, worker, startArgs };
 
   set(name, container);
 
@@ -54,27 +55,35 @@ const optionSplitter = /,\s*/;
 
 export function updateContainer(options: Partial<ContainerUpdateOptions>) {
   readTargetName(options);
-  let { port, volumes, name, image, domain } = options;
+  let { port, volumes, name, image, domain, startArgs, worker } = options;
   const container = get(name);
 
   if (!container) {
     throw new Error('Container not found');
   }
 
-  if (port) {
+  if (port !== undefined) {
     container.port = port;
   }
 
-  if (volumes) {
+  if (volumes !== undefined) {
     container.volumes = sanitiseVolumes(volumes);
   }
 
-  if (image) {
+  if (image !== undefined) {
     container.image = image;
   }
 
-  if (domain) {
+  if (domain !== undefined) {
     container.domain = domain;
+  }
+
+  if (startArgs !== undefined) {
+    container.startArgs = startArgs;
+  }
+
+  if (worker !== undefined) {
+    container.worker = worker;
   }
 
   set(container.name, container);

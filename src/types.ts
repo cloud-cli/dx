@@ -9,6 +9,8 @@ export interface Container {
   domain: string;
   port: string;
   volumes: string;
+  worker: boolean;
+  startArgs: string;
 }
 
 export interface NameAndStatus {
