@@ -119,7 +119,13 @@ async function getPorts(container: Container): Promise<[number, number]> {
   return [port, port];
 }
 
-export async function startContainer(options: ContainerName, { run }: ServerParams) {
+export interface StartOptions {
+  daemon?: boolean;
+  restart?: boolean;
+  startArgs?: string;
+}
+
+export async function startContainer(options: ContainerName & StartOptions, { run }: ServerParams) {
   readTargetName(options);
   const { name } = options;
 
@@ -143,7 +149,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
   const extraArgs = [];
   const config = await getConfig<Config>('dx');
 
-  if (container.domain) {
+  if (container.domain && !options.daemon) {
     const [domain, path = ''] = container.domain.split("/");
     await run("dns.add", { domain });
 
@@ -166,8 +172,7 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
   const execArgs = [
     'run',
     '--detach',
-    '--restart',
-    'always',
+    ...(options.restart !== false ? ['--restart', 'always'] : []),
     '--name',
     name,
     ...extraArgs,
@@ -176,6 +181,10 @@ export async function startContainer(options: ContainerName, { run }: ServerPara
     ...addExecFlag(envKeys, 'e'),
     container.image,
   ];
+
+  if (options.startArgs) {
+    execArgs.push(...JSON.parse(options.startArgs));
+  }
 
   const output = await exec('docker', execArgs.filter(Boolean), { env });
 
