@@ -8,6 +8,7 @@ import {
   startContainer,
   stopContainer,
   renameContainer,
+  runContainer,
 } from "./containers.js";
 import { prune, pull } from "./images.js";
 import {
@@ -39,6 +40,7 @@ export default {
   update: updateContainer,
   startAll,
   start: startContainer,
+  run: runContainer,
   stop: stopContainer,
   restart: restartContainer,
   ps: ps,

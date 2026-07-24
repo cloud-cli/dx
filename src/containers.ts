@@ -124,6 +124,10 @@ export interface StartOptions {
   startArgs?: string;
 }
 
+export function runContainer(options: ContainerName & StartOptions, p: ServerParams) {
+  return startContainer({ ...options, worker: true }, p);
+}
+
 export async function startContainer(options: ContainerName & StartOptions, { run }: ServerParams) {
   readTargetName(options);
   const { name } = options;
@@ -182,7 +186,8 @@ export async function startContainer(options: ContainerName & StartOptions, { ru
   ];
 
   if (options.startArgs) {
-    execArgs.push(...JSON.parse(options.startArgs));
+    const p = options.startArgs;
+    execArgs.push(...(Array.isArray(p) ? p : JSON.parse(p)));
   }
 
   const output = await exec('docker', execArgs.filter(Boolean), { env });

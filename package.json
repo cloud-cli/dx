@@ -1,6 +1,6 @@
 {
   "name": "@cloud-cli/dx",
-  "version": "0.0.0",
+  "version": "2.3.2",
   "description": "Docker container management",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
