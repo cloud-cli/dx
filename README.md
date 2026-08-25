@@ -19,6 +19,7 @@ cy dx.start --name node-app
 cy dx.logs --name node-app
 cy dx.stop --name node-app
 cy dx.remove --name node-app
+cy dx.updateAll --image node:latest
 ```
 
 ## Options

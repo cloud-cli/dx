@@ -98,7 +98,7 @@ export function rename(name: string, newName: string) {
   return container;
 }
 
-export function listContainers(options: ContainerListOptions = {}) {
+export function listContainers(options: ContainerListOptions = {}): Container[] {
   const keys: Array<keyof Container> = ['name', 'image', 'domain', 'port', 'volumes'];
   const list = getAll();
 

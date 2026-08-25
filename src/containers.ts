@@ -64,7 +64,6 @@ export function renameContainer(options: RenameOptions) {
   return rename(name, newName);
 }
 
-
 export async function startAll(_: any, cli: any) {
   const list = listContainers();
   const running = (await getRunningContainers()) as string[];
@@ -77,6 +76,22 @@ export async function startAll(_: any, cli: any) {
   }
 
   return true;
+}
+
+export async function updateAll(options: { image: string }, cli: any) {
+  const list = listContainers();
+  const affected = [];
+
+  for (const app of list) {
+    if (app.image !== options.image) continue;
+
+    try {
+      await refreshContainer({ name: app.name }, cli);
+      affected.push(app.name);
+    } catch {}
+  }
+
+  return affected;
 }
 
 export async function refreshContainer(options: ContainerName, { run }: ServerParams) {
@@ -153,15 +168,10 @@ export async function startContainer(options: ContainerName & StartOptions, { ru
   const config = await getConfig<Config>('dx');
 
   if (container.domain && !options.worker) {
-    const [domain, path = ''] = container.domain.split("/");
-    await run("dns.add", { domain });
+    const [domain, path = ''] = container.domain.split('/');
+    await run('dns.add', { domain });
 
-    extraArgs.push(
-      "--label",
-      "px:host=" + domain,
-      "--label",
-      "px:path=" + path
-    );
+    extraArgs.push('--label', 'px:host=' + domain, '--label', 'px:path=' + path);
   }
 
   if (config.dns) {
@@ -219,7 +229,7 @@ export async function stopContainer(options: ContainerName, { run }: ServerParam
   await exec('docker', ['stop', '-t', '5', name]);
   await exec('docker', ['rm', name]);
 
-  const containers = [findContainer(name)].filter(c => c && c.domain);
+  const containers = [findContainer(name)].filter((c) => c && c.domain);
 
   for (const container of containers) {
     await run('dns.remove', { domain: container.domain });
