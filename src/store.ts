@@ -104,7 +104,7 @@ export function listContainers(options: ContainerListOptions = {}): Container[] 
 
   const filtered = keys.reduce((list, key) => {
     if (options[key]) {
-      return list.filter((c) => String(c[key]).toLowerCase().includes(options[key].toLowerCase()));
+      return list.filter((c) => String(c[key]).toLowerCase().includes(String(options[key]).toLowerCase()));
     }
 
     return list;
