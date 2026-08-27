@@ -1,10 +1,10 @@
-## DX
+# DX
 
 Run Docker containers
 
 ## Install
 
-```
+```sh
 npm i @cloud-cli/dx
 ```
 
@@ -24,10 +24,10 @@ cy dx.updateAll --image node:latest
 
 ## Options
 
-| Option | Description |
-|-|-|
-| name | Required. Container name |
-| image | Required: Container image |
-| volumes | Comma-separated list of volume bindings |
-| port | Empty = random port. `:port` = random host port. `number` = fixed port on host and container |
-| domain | Domain to bind this container to. Requires `@cloud-cli/px` and `@cloud-cli/dns` |
+| Option  | Description                                                                                  |
+| ------- | -------------------------------------------------------------------------------------------- |
+| name    | Required. Container name                                                                     |
+| image   | Required: Container image                                                                    |
+| volumes | Comma-separated list of volume bindings                                                      |
+| port    | Empty = random port. `:port` = random host port. `number` = fixed port on host and container |
+| domain  | Domain to bind this container to. Requires `@cloud-cli/px` and `@cloud-cli/dns`              |
