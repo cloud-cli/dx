@@ -296,6 +296,31 @@ describe('running containers', () => {
       expect(run).toHaveBeenCalledWith('dx.prune', {});
       expect(run).toHaveBeenCalledWith('dx.start', { name });
     });
+
+    it('should only start containers matching an image filter', async () => {
+      await dx.add({ name: 'matching', image: 'test-image:latest' });
+      await dx.add({ name: 'other', image: 'other-image:latest' });
+      execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: '' });
+
+      const run = vi.fn();
+      await expect(dx.startAll({ image: 'test-image' }, { run })).resolves.toBe(true);
+
+      expect(run).toHaveBeenCalledWith('dx.pull', { image: 'test-image:latest' });
+      expect(run).not.toHaveBeenCalledWith('dx.pull', { image: 'other-image:latest' });
+    });
+  });
+
+  describe('updateAll', () => {
+    it('should update only containers matching an image filter', async () => {
+      await dx.add({ name: 'matching', image: 'test-image:latest' });
+      await dx.add({ name: 'other', image: 'other-image:latest' });
+
+      const run = vi.fn();
+      await expect(dx.updateAll({ image: 'test-image' }, { run })).resolves.toEqual(['matching']);
+
+      expect(run).toHaveBeenCalledWith('dx.pull', { image: 'test-image:latest' });
+      expect(run).not.toHaveBeenCalledWith('dx.pull', { image: 'other-image:latest' });
+    });
   });
 
   describe('start', () => {
@@ -459,6 +484,21 @@ describe('running containers', () => {
       await expect(dx.stop({ name }, { run })).rejects.toThrowError('Name is required');
 
       expect(exec).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('stopAll', () => {
+    it('should stop running containers matching an image filter', async () => {
+      await dx.add({ name: 'matching', image: 'test-image:latest' });
+      await dx.add({ name: 'other', image: 'other-image:latest' });
+      execMocks.exec.mockResolvedValueOnce({ ok: true, stdout: 'matching' });
+
+      const run = vi.fn();
+      await expect(dx.stopAll({ image: 'test-image' }, { run })).resolves.toEqual(['matching']);
+
+      expect(execMocks.exec).toHaveBeenCalledWith('docker', ['stop', '-t', '5', 'matching']);
+      expect(execMocks.exec).toHaveBeenCalledWith('docker', ['rm', 'matching']);
+      expect(execMocks.exec).not.toHaveBeenCalledWith('docker', ['stop', '-t', '5', 'other']);
     });
   });
 });

@@ -64,8 +64,26 @@ export function renameContainer(options: RenameOptions) {
   return rename(name, newName);
 }
 
-export async function startAll(_: any, cli: any) {
-  const list = listContainers();
+export interface AllOptions {
+  image?: string;
+}
+
+export async function updateAll({ image }: AllOptions = {}, cli: any) {
+  const list = listContainers({ image });
+  const affected = [];
+
+  for (const app of list) {
+    try {
+      await refreshContainer({ name: app.name }, cli);
+      affected.push(app.name);
+    } catch {}
+  }
+
+  return affected;
+}
+
+export async function startAll({ image }: AllOptions = {}, cli: any) {
+  const list = listContainers({ image });
   const running = (await getRunningContainers()) as string[];
   const notRunning = list.filter(({ name }) => !running.includes(name));
 
@@ -78,15 +96,15 @@ export async function startAll(_: any, cli: any) {
   return true;
 }
 
-export async function updateAll(options: { image: string }, cli: any) {
-  const list = listContainers();
+export async function stopAll({ image }: AllOptions = {}, cli: any) {
+  const list = listContainers({ image });
+  const running = await getRunningContainers();
+  const runningContainers = list.filter(({ name }) => running.includes(name));
   const affected = [];
 
-  for (const app of list) {
-    if (app.image !== options.image) continue;
-
+  for (const app of runningContainers) {
     try {
-      await refreshContainer({ name: app.name }, cli);
+      await stopContainer({ name: app.name }, cli);
       affected.push(app.name);
     } catch {}
   }
