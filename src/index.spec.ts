@@ -27,9 +27,24 @@ describe('help', () => {
     expect(typeof commands).toBe('object');
 
     const expectedCommands = [
-      'pull', 'prune', 'add', 'remove', 'rename', 'get', 'list',
-      'refresh', 'update', 'updateAll', 'startAll', 'start', 'run',
-      'stop', 'stopAll', 'restart', 'ps', 'logs',
+      'pull',
+      'prune',
+      'add',
+      'remove',
+      'rename',
+      'get',
+      'list',
+      'refresh',
+      'update',
+      'updateAll',
+      'startAll',
+      'start',
+      'run',
+      'stop',
+      'stopAll',
+      'restart',
+      'ps',
+      'logs',
     ];
 
     for (const cmd of expectedCommands) {
@@ -49,10 +64,11 @@ describe('help', () => {
 
 vi.mock('get-port', () => ({ default: vi.fn().mockReturnValue(1234) }));
 vi.mock('@cloud-cli/exec', () => ({ exec: execMocks.exec }));
-vi.mock('@cloud-cli/cli', async (original) => {
-  const mod: any = await original();
+vi.mock('@cloud-cli/cli', async (importOriginal) => {
+  const mod: any = await importOriginal();
   return {
     ...mod,
+    help: mod.help,
     getConfig: execMocks.getConfig,
   };
 });
