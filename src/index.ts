@@ -14,7 +14,7 @@ import {
 } from './containers.js';
 import { prune, pull } from './images.js';
 import { addContainer, getContainer, listContainers, removeContainer, updateContainer } from './store.js';
-import { help } from '@cloud-cli/cli';
+const help = Symbol.for('help');
 export type { Config } from './types.js';
 
 function ps(options: { status?: boolean } = {}) {
@@ -25,9 +25,8 @@ function ps(options: { status?: boolean } = {}) {
   return getRunningContainers();
 }
 
-const dxHelp = {
-  description: 'Docker container management',
-  commands: {
+const helpFunction = () => {
+  const commands = {
     pull: 'Pull a docker image (requires image argument)',
     prune: 'Prune old docker images',
     add: 'Add a container entry (requires name and image)',
@@ -46,7 +45,13 @@ const dxHelp = {
     restart: 'Restart a container',
     ps: 'List containers (use { status: true } to show all with status)',
     logs: 'Get container logs (requires name, optional lines)',
-  },
+  };
+
+  const lines = ['Docker container management', '', 'Commands:'];
+  for (const [name, desc] of Object.entries(commands)) {
+    lines.push(`  ${name} - ${desc}`);
+  }
+  return lines.join('\n');
 };
 
 export default {
@@ -68,6 +73,6 @@ export default {
   restart: restartContainer,
   ps: ps,
   logs: getLogs,
-  help: dxHelp,
-  [help]: dxHelp,
+  [help]: helpFunction,
 };
+export { help };
