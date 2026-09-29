@@ -544,7 +544,7 @@ describe('running containers', () => {
     });
 
     it('should not expose "help" as a normal command key', () => {
-      expect(dx.help).toBeUndefined();
+      expect(Object.hasOwn(dx, 'help')).toBe(false);
     });
   });
 });
