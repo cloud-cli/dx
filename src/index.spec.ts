@@ -8,6 +8,45 @@ const execMocks = vi.hoisted(() => ({
   getConfig: vi.fn().mockImplementation(() => ({ dns: '1.2.3.4', dockerArgs: ['--net=bridge'] })),
 }));
 
+// Help export structure
+describe('help', () => {
+  it('should have a help property on the default export', () => {
+    expect(dx.help).toBeDefined();
+    expect(typeof dx.help).toBe('object');
+  });
+
+  it('should have a description string', () => {
+    expect(dx.help.description).toBeDefined();
+    expect(typeof dx.help.description).toBe('string');
+    expect(dx.help.description).toContain('Docker');
+  });
+
+  it('should have commands object with all exported commands', () => {
+    const commands = dx.help.commands;
+    expect(commands).toBeDefined();
+    expect(typeof commands).toBe('object');
+
+    const expectedCommands = [
+      'pull', 'prune', 'add', 'remove', 'rename', 'get', 'list',
+      'refresh', 'update', 'updateAll', 'startAll', 'start', 'run',
+      'stop', 'stopAll', 'restart', 'ps', 'logs',
+    ];
+
+    for (const cmd of expectedCommands) {
+      expect(commands).toHaveProperty(cmd);
+    }
+  });
+
+  it('should have descriptive command strings', () => {
+    const commands = dx.help.commands;
+    for (const [name, desc] of Object.entries(commands)) {
+      expect(desc).toBeDefined();
+      expect(typeof desc).toBe('string');
+      expect(desc.length).toBeGreaterThan(0);
+    }
+  });
+});
+
 vi.mock('get-port', () => ({ default: vi.fn().mockReturnValue(1234) }));
 vi.mock('@cloud-cli/exec', () => ({ exec: execMocks.exec }));
 vi.mock('@cloud-cli/cli', async (original) => {
