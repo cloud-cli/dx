@@ -1,8 +1,8 @@
-import type { Container, ExtraOptions } from './types.js';
-import { readTargetImage, readTargetName } from './utils.js';
-import { getStorage } from '@cloud-cli/cli';
+import type { Container, ExtraOptions } from "./types.js";
+import { readTargetImage, readTargetName, type EnvList } from "./utils.js";
+import { getStorage, type ServerParams } from "@cloud-cli/cli";
 
-const { get, set, has, remove, getAll } = getStorage<Container>('dx');
+const { get, set, has, remove, getAll } = getStorage<Container>("dx");
 
 interface ContainerName extends ExtraOptions {
   name: string;
@@ -23,11 +23,15 @@ export function addContainer(options: ContainerUpdateOptions): Container {
   readTargetName(options);
   readTargetImage(options);
   const { name, image } = options;
-  if (!name) throw new Error('Name required');
-  if (!image) throw new Error('Image required');
+  if (!name) {
+    throw new Error("Name required");
+  }
+  if (!image) {
+    throw new Error("Image required");
+  }
 
-  const volumes = options.volumes ? sanitiseVolumes(options.volumes) : '';
-  const { port = '', domain = '', worker = false, startArgs = '' } = options;
+  const volumes = options.volumes ? sanitiseVolumes(options.volumes) : "";
+  const { port = "", domain = "", worker = false, startArgs = "" } = options;
   const container: Container = { name, image, volumes, port, domain, worker, startArgs };
 
   set(name, container);
@@ -43,7 +47,7 @@ export function removeContainer(options: ContainerName) {
     return true;
   }
 
-  throw new Error('Container not found: ' + options.name);
+  throw new Error("Container not found: " + options.name);
 }
 
 export function getContainer(options: ContainerName) {
@@ -55,11 +59,11 @@ const optionSplitter = /,\s*/;
 
 export function updateContainer(options: Partial<ContainerUpdateOptions>) {
   readTargetName(options);
-  let { port, volumes, name, image, domain, startArgs, worker } = options;
+  const { port, volumes, name, image, domain, startArgs, worker } = options;
   const container = get(name);
 
   if (!container) {
-    throw new Error('Container not found');
+    throw new Error("Container not found");
   }
 
   if (port !== undefined) {
@@ -99,7 +103,7 @@ export function rename(name: string, newName: string) {
 }
 
 export function listContainers(options: ContainerListOptions = {}): Container[] {
-  const keys: Array<keyof Container> = ['name', 'image', 'domain', 'port', 'volumes'];
+  const keys: Array<keyof Container> = ["name", "image", "domain", "port", "volumes"];
   const list = getAll();
 
   const filtered = keys.reduce((list, key) => {
@@ -113,6 +117,33 @@ export function listContainers(options: ContainerListOptions = {}): Container[] 
   return filtered.sort((a, b) => Number(a.name > b.name) || -1);
 }
 
+export async function clone(options: { name: string; newName: string }, { run }: ServerParams) {
+  const { name, newName } = options;
+
+  if (!name || !newName) {
+    throw new Error("Name and new name required");
+  }
+
+  const container = get(name);
+
+  if (!container) {
+    throw new Error("Container not found: " + name);
+  }
+
+  const vars = (await run("env.show", { name })) as EnvList;
+  for (const varItem of vars) {
+    await run("env.set", { name: newName, key: varItem.key, value: varItem.value });
+  }
+
+  const cloned: Container = {
+    ...container,
+    name: newName,
+  };
+
+  set(newName, cloned);
+
+  return cloned;
+}
 
 export function findContainer(name: string) {
   return get(name);
@@ -124,5 +155,5 @@ function sanitiseVolumes(volumes: string) {
     .split(optionSplitter)
     .map((s) => s.trim())
     .filter((s) => volumeTester.test(s))
-    .join(',');
+    .join(",");
 }
